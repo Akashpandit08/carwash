@@ -1,0 +1,39 @@
+# dependencies
+node_modules/
+vendor/
+
+# env / secrets
+.env
+.env.*
+!.env.example
+google-services.json
+GoogleService-Info.plist
+
+# Expo / React Native
+.expo/
+dist/
+build/
+web-build/
+
+# logs
+*.log
+*.err
+*.out
+.expo-start.err
+.expo-start.log
+
+# tools / binaries / zips
+*.exe
+*.zip
+tools/
+WheelWash/tools/
+
+# Laravel
+wheelwashfull/storage/logs/*
+wheelwashfull/bootstrap/cache/*
+wheelwashfull/.env
+
+# editor
+.vscode/
+.DS_Store
+Thumbs.db

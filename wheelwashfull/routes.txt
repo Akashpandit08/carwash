@@ -1,0 +1,249 @@
+
+  GET|HEAD        / ................................................................................ routes/web.php:12
+  ANY             admin/app-banners ................................. admin. › Illuminate\Routing › RedirectController
+  GET|HEAD        admin/banners ................................... admin.banners.index › Admin\BannerController@index
+  POST            admin/banners ................................... admin.banners.store › Admin\BannerController@store
+  GET|HEAD        admin/banners/create .......................... admin.banners.create › Admin\BannerController@create
+  PUT|PATCH       admin/banners/{banner} ........................ admin.banners.update › Admin\BannerController@update
+  DELETE          admin/banners/{banner} ...................... admin.banners.destroy › Admin\BannerController@destroy
+  GET|HEAD        admin/banners/{banner}/edit ....................... admin.banners.edit › Admin\BannerController@edit
+  PATCH           admin/banners/{banner}/toggle ................. admin.banners.toggle › Admin\BannerController@toggle
+  GET|HEAD        admin/bookings ................................ admin.bookings.index › Admin\BookingController@index
+  GET|HEAD        admin/bookings/{booking} ........................ admin.bookings.show › Admin\BookingController@show
+  POST            admin/bookings/{booking}/assign-partner admin.bookings.assignPartner › Admin\BookingController@assi…
+  POST            admin/bookings/{booking}/update-payment-status admin.bookings.updatePaymentStatus › Admin\BookingCo…
+  POST            admin/bookings/{booking}/update-status admin.bookings.updateStatus › Admin\BookingController@update…
+  GET|HEAD        admin/coupons ................................ admin.coupons.index › Admin\CouponWebController@index
+  POST            admin/coupons ................................ admin.coupons.store › Admin\CouponWebController@store
+  GET|HEAD        admin/coupons/create ....................... admin.coupons.create › Admin\CouponWebController@create
+  GET|HEAD        admin/coupons/{coupon} ......................... admin.coupons.show › Admin\CouponWebController@show
+  PUT|PATCH       admin/coupons/{coupon} ..................... admin.coupons.update › Admin\CouponWebController@update
+  DELETE          admin/coupons/{coupon} ................... admin.coupons.destroy › Admin\CouponWebController@destroy
+  GET|HEAD        admin/coupons/{coupon}/edit .................... admin.coupons.edit › Admin\CouponWebController@edit
+  GET|HEAD        admin/customers ............................. admin.customers.index › Admin\CustomerController@index
+  GET|HEAD        admin/customers/{customer} .................... admin.customers.show › Admin\CustomerController@show
+  GET|HEAD        admin/dashboard .................................. admin.dashboard › Admin\DashboardController@index
+  GET|HEAD        admin/login ........................................... admin.login › Admin\AuthController@showLogin
+  POST            admin/login .................................................... admin. › Admin\AuthController@login
+  POST            admin/logout ............................................ admin.logout › Admin\AuthController@logout
+  GET|HEAD        admin/notifications ................. admin.notifications.index › Admin\NotificationController@index
+  POST            admin/notifications ................. admin.notifications.store › Admin\NotificationController@store
+  GET|HEAD        admin/notifications/create ........ admin.notifications.create › Admin\NotificationController@create
+  GET|HEAD        admin/notifications/{notification} .... admin.notifications.show › Admin\NotificationController@show
+  DELETE          admin/notifications/{notification} admin.notifications.destroy › Admin\NotificationController@destr…
+  POST            admin/notifications/{notification}/send admin.notifications.send › Admin\NotificationController@send
+  GET|HEAD        admin/partners ................................ admin.partners.index › Admin\PartnerController@index
+  GET|HEAD        admin/partners/{partner} ........................ admin.partners.show › Admin\PartnerController@show
+  GET|HEAD        admin/payments ................................ admin.payments.index › Admin\PaymentController@index
+  GET|HEAD        admin/reports ................................... admin.reports.index › Admin\ReportController@index
+  GET|HEAD        admin/reviews ................................... admin.reviews.index › Admin\ReviewController@index
+  GET|HEAD        admin/reviews/{review} ............................ admin.reviews.show › Admin\ReviewController@show
+  DELETE          admin/reviews/{review} ...................... admin.reviews.destroy › Admin\ReviewController@destroy
+  GET|HEAD        admin/services ................................ admin.services.index › Admin\ServiceController@index
+  POST            admin/services ................................ admin.services.store › Admin\ServiceController@store
+  GET|HEAD        admin/services/create ....................... admin.services.create › Admin\ServiceController@create
+  GET|HEAD        admin/services/{service} ........................ admin.services.show › Admin\ServiceController@show
+  PUT|PATCH       admin/services/{service} .................... admin.services.update › Admin\ServiceController@update
+  DELETE          admin/services/{service} .................. admin.services.destroy › Admin\ServiceController@destroy
+  GET|HEAD        admin/services/{service}/edit ................... admin.services.edit › Admin\ServiceController@edit
+  GET|HEAD        admin/slots ......................................... admin.slots.index › Admin\SlotController@index
+  POST            admin/slots ......................................... admin.slots.store › Admin\SlotController@store
+  GET|HEAD        admin/slots/create ................................ admin.slots.create › Admin\SlotController@create
+  GET|HEAD        admin/slots/{slot} .................................... admin.slots.show › Admin\SlotController@show
+  PUT|PATCH       admin/slots/{slot} ................................ admin.slots.update › Admin\SlotController@update
+  DELETE          admin/slots/{slot} .............................. admin.slots.destroy › Admin\SlotController@destroy
+  GET|HEAD        admin/slots/{slot}/edit ............................... admin.slots.edit › Admin\SlotController@edit
+  GET|HEAD        api/admin ...................................................... Api\Admin\DashboardController@index
+  GET|HEAD        api/admin/banners ................................. banners.index › Api\Admin\BannerController@index
+  POST            api/admin/banners ................................. banners.store › Api\Admin\BannerController@store
+  GET|HEAD        api/admin/banners/{banner} .......................... banners.show › Api\Admin\BannerController@show
+  PUT|PATCH       api/admin/banners/{banner} ...................... banners.update › Api\Admin\BannerController@update
+  DELETE          api/admin/banners/{banner} .................... banners.destroy › Api\Admin\BannerController@destroy
+  GET|HEAD        api/admin/bookings ............................................... Api\Admin\BookingController@index
+  GET|HEAD        api/admin/bookings/{booking} ...................................... Api\Admin\BookingController@show
+  POST            api/admin/bookings/{booking}/assign-partner .............. Api\Admin\BookingController@assignPartner
+  POST            api/admin/bookings/{booking}/assign-pickup-driver ... Api\Admin\BookingController@assignPickupDriver
+  POST            api/admin/bookings/{booking}/assign-worker ................ Api\Admin\BookingController@assignWorker
+  GET|HEAD        api/admin/bookings/{booking}/media ............................... Api\Admin\BookingController@media
+  POST            api/admin/bookings/{booking}/status ....................... Api\Admin\BookingController@updateStatus
+  GET|HEAD        api/admin/bookings/{booking}/status-logs .................... Api\Admin\BookingController@statusLogs
+  GET|HEAD        api/admin/bookings/{booking}/tracking ......................... Api\Admin\BookingController@tracking
+  GET|HEAD        api/admin/coupons ..................................................... Admin\CouponController@index
+  POST            api/admin/coupons ..................................................... Admin\CouponController@store
+  GET|HEAD        api/admin/coupons/{coupon} ............................................. Admin\CouponController@show
+  PUT             api/admin/coupons/{coupon} ........................................... Admin\CouponController@update
+  DELETE          api/admin/coupons/{coupon} .......................................... Admin\CouponController@destroy
+  GET|HEAD        api/admin/coupons/{coupon}/statistics ............................ Admin\CouponController@statistics
+  PATCH           api/admin/coupons/{coupon}/toggle .............................. Admin\CouponController@toggleStatus
+  GET|HEAD        api/admin/customers ........................... customers.index › Api\Admin\CustomerController@index
+  GET|HEAD        api/admin/customers/{customer} .................. customers.show › Api\Admin\CustomerController@show
+  GET|HEAD        api/admin/dashboard ............................................ Api\Admin\DashboardController@index
+  GET|HEAD        api/admin/partners ............................................... Api\Admin\PartnerController@index
+  POST            api/admin/partners ............................................... Api\Admin\PartnerController@store
+  PUT             api/admin/partners/{partner} .................................... Api\Admin\PartnerController@update
+  GET|HEAD        api/admin/payouts ................................................. Api\Admin\PayoutController@index
+  POST            api/admin/payouts/{payout}/approve .............................. Api\Admin\PayoutController@approve
+  POST            api/admin/payouts/{payout}/mark-paid ........................... Api\Admin\PayoutController@markPaid
+  GET|HEAD        api/admin/pickup-drivers .................................... Api\Admin\PickupDriverController@index
+  POST            api/admin/pickup-drivers .................................... Api\Admin\PickupDriverController@store
+  PUT             api/admin/pickup-drivers/{driver} .......................... Api\Admin\PickupDriverController@update
+  GET|HEAD        api/admin/ratings ..................................................... Admin\RatingController@index
+  GET|HEAD        api/admin/ratings/customer .................................. Admin\RatingController@customerRatings
+  GET|HEAD        api/admin/ratings/partner .................................... Admin\RatingController@partnerRatings
+  GET|HEAD        api/admin/ratings/statistics ..................................... Admin\RatingController@statistics
+  GET|HEAD        api/admin/ratings/top-partners ............................. Admin\RatingController@topRatedPartners
+  GET|HEAD        api/admin/ratings/{rating} ............................................. Admin\RatingController@show
+  DELETE          api/admin/ratings/{rating} .......................................... Admin\RatingController@destroy
+  GET|HEAD        api/admin/reports ................................................. Api\Admin\ReportController@index
+  GET|HEAD        api/admin/services .............................. services.index › Api\Admin\ServiceController@index
+  POST            api/admin/services .............................. services.store › Api\Admin\ServiceController@store
+  GET|HEAD        api/admin/services/{service} ...................... services.show › Api\Admin\ServiceController@show
+  PUT|PATCH       api/admin/services/{service} .................. services.update › Api\Admin\ServiceController@update
+  DELETE          api/admin/services/{service} ................ services.destroy › Api\Admin\ServiceController@destroy
+  GET|HEAD        api/admin/slots ....................................... slots.index › Api\Admin\SlotController@index
+  POST            api/admin/slots ....................................... slots.store › Api\Admin\SlotController@store
+  GET|HEAD        api/admin/slots/{slot} .................................. slots.show › Api\Admin\SlotController@show
+  PUT|PATCH       api/admin/slots/{slot} .............................. slots.update › Api\Admin\SlotController@update
+  DELETE          api/admin/slots/{slot} ............................ slots.destroy › Api\Admin\SlotController@destroy
+  GET|HEAD        api/admin/workers ................................................. Api\Admin\WorkerController@index
+  POST            api/admin/workers ................................................. Api\Admin\WorkerController@store
+  PUT             api/admin/workers/{worker} ....................................... Api\Admin\WorkerController@update
+  GET|HEAD        api/app-banners ...................................................... Api\AppBannerController@index
+  GET|HEAD        api/app/banners ................................................... Api\AppContentController@banners
+  POST            api/app/device-token ..................................... Api\AppContentController@storeDeviceToken
+  GET|HEAD        api/app/home ......................................................... Api\AppContentController@home
+  GET|HEAD        api/app/notifications ....................................... Api\AppContentController@notifications
+  POST            api/auth/logout .............................................................. AuthController@logout
+  GET|HEAD        api/auth/me ...................................................................... AuthController@me
+  POST            api/auth/send-otp ........................................................... AuthController@sendOtp
+  POST            api/auth/verify-otp ....................................................... AuthController@verifyOtp
+  GET|HEAD        api/customer/addresses ...................... addresses.index › Api\Customer\AddressController@index
+  POST            api/customer/addresses ...................... addresses.store › Api\Customer\AddressController@store
+  GET|HEAD        api/customer/addresses/{address} .............. addresses.show › Api\Customer\AddressController@show
+  PUT|PATCH       api/customer/addresses/{address} .......... addresses.update › Api\Customer\AddressController@update
+  DELETE          api/customer/addresses/{address} ........ addresses.destroy › Api\Customer\AddressController@destroy
+  GET|HEAD        api/customer/banners ................................................. Api\AppBannerController@index
+  GET|HEAD        api/customer/bookings .................................................. Api\BookingController@index
+  POST            api/customer/bookings .................................................. Api\BookingController@store
+  POST            api/customer/bookings/apply-coupon ............................... Api\BookingController@applyCoupon
+  GET|HEAD        api/customer/bookings/slots ............................................ Api\BookingController@slots
+  GET|HEAD        api/customer/bookings/{booking} ......................................... Api\BookingController@show
+  POST            api/customer/bookings/{booking}/cancel ................................ Api\BookingController@cancel
+  POST            api/customer/bookings/{booking}/review ................................ Api\BookingController@review
+  GET|HEAD        api/customer/bookings/{booking}/track .................................. Api\BookingController@track
+  GET|HEAD        api/customer/bookings/{booking}/tracking ............................... Api\BookingController@track
+  GET|HEAD        api/customer/coupons ............................................... Customer\CouponController@index
+  POST            api/customer/coupons/apply ......................................... Customer\CouponController@apply
+  GET|HEAD        api/customer/dashboard .......................................................... routes/api.php:106
+  GET|HEAD        api/customer/home ................................................ Api\Customer\HomeController@index
+  GET|HEAD        api/customer/payments/{payment}/checkout ............................ Api\PaymentController@checkout
+  POST            api/customer/payments/{payment}/failed ................................ Api\PaymentController@failed
+  POST            api/customer/payments/{payment}/success .............................. Api\PaymentController@success
+  POST            api/customer/payments/{payment}/verify ................................ Api\PaymentController@verify
+  GET|HEAD        api/customer/profile .................................................... Api\ProfileController@show
+  PUT             api/customer/profile .................................................. Api\ProfileController@update
+  GET|HEAD        api/customer/ratings ............................................... Customer\RatingController@index
+  POST            api/customer/ratings ............................................... Customer\RatingController@store
+  GET|HEAD        api/customer/ratings/booking ................................ Customer\RatingController@getByBooking
+  GET|HEAD        api/customer/ratings/{rating} ....................................... Customer\RatingController@show
+  PUT             api/customer/ratings/{rating} ..................................... Customer\RatingController@update
+  DELETE          api/customer/ratings/{rating} .................................... Customer\RatingController@destroy
+  GET|HEAD        api/customer/services .................................................. Api\ServiceController@index
+  GET|HEAD        api/customer/services/{service} ......................................... Api\ServiceController@show
+  GET|HEAD        api/customer/slots ........................................................ Api\SlotController@index
+  GET|HEAD        api/customer/support/faqs ...................................... Api\Customer\SupportController@faqs
+  POST            api/customer/support/ticket ............................ Api\Customer\SupportController@submitTicket
+  GET|HEAD        api/customer/vehicles ................................. vehicles.index › Api\VehicleController@index
+  POST            api/customer/vehicles ................................. vehicles.store › Api\VehicleController@store
+  GET|HEAD        api/customer/vehicles/{vehicle} ......................... vehicles.show › Api\VehicleController@show
+  PUT|PATCH       api/customer/vehicles/{vehicle} ..................... vehicles.update › Api\VehicleController@update
+  DELETE          api/customer/vehicles/{vehicle} ................... vehicles.destroy › Api\VehicleController@destroy
+  GET|HEAD        api/operations/driver/dashboard ...................... Api\Operations\Driver\JobController@dashboard
+  GET|HEAD        api/operations/driver/earnings ........................ Api\Operations\Driver\JobController@earnings
+  GET|HEAD        api/operations/driver/jobs ............................... Api\Operations\Driver\JobController@index
+  GET|HEAD        api/operations/driver/jobs/{booking} ...................... Api\Operations\Driver\JobController@show
+  POST            api/operations/driver/jobs/{booking}/media ............... Api\Operations\Driver\JobController@media
+  POST            api/operations/driver/jobs/{booking}/status ............. Api\Operations\Driver\JobController@status
+  POST            api/operations/location/update ............................ Api\Operations\LocationController@update
+  GET|HEAD        api/operations/partner/dashboard .................... Api\Operations\Partner\JobController@dashboard
+  GET|HEAD        api/operations/partner/jobs ............................. Api\Operations\Partner\JobController@index
+  GET|HEAD        api/operations/partner/jobs/{booking} .................... Api\Operations\Partner\JobController@show
+  POST            api/operations/partner/jobs/{booking}/assign-worker Api\Operations\Partner\JobController@assignWork…
+  POST            api/operations/partner/jobs/{booking}/media ............. Api\Operations\Partner\JobController@media
+  POST            api/operations/partner/jobs/{booking}/status ........... Api\Operations\Partner\JobController@status
+  GET|HEAD        api/operations/partner/workers ....................... Api\Operations\Partner\WorkerController@index
+  GET|HEAD        api/operations/worker/dashboard ...................... Api\Operations\Worker\JobController@dashboard
+  GET|HEAD        api/operations/worker/earnings ........................ Api\Operations\Worker\JobController@earnings
+  GET|HEAD        api/operations/worker/jobs ............................... Api\Operations\Worker\JobController@index
+  GET|HEAD        api/operations/worker/jobs/{booking} ...................... Api\Operations\Worker\JobController@show
+  POST            api/operations/worker/jobs/{booking}/media ............... Api\Operations\Worker\JobController@media
+  POST            api/operations/worker/jobs/{booking}/status ............. Api\Operations\Worker\JobController@status
+  GET|HEAD        api/partner/banners ............................................... Api\AppContentController@banners
+  GET|HEAD        api/partner/bookings ........................................... Api\Partner\BookingController@index
+  GET|HEAD        api/partner/bookings/{booking} .................................. Api\Partner\BookingController@show
+  POST            api/partner/bookings/{booking}/collect-cod ................ Api\Partner\BookingController@collectCod
+  POST            api/partner/bookings/{booking}/images .................... Api\Partner\BookingController@uploadImage
+  POST            api/partner/bookings/{booking}/status ................... Api\Partner\BookingController@updateStatus
+  GET|HEAD        api/partner/dashboard ........................................................... routes/api.php:181
+  POST            api/partner/device-token ................................. Api\AppContentController@storeDeviceToken
+  GET|HEAD        api/partner/earnings ........................................ Api\Partner\BookingController@earnings
+  GET|HEAD        api/partner/notifications ................................... Api\AppContentController@notifications
+  GET|HEAD        api/partner/ratings ................................................. Partner\RatingController@index
+  GET|HEAD        api/partner/ratings/recent ......................................... Partner\RatingController@recent
+  GET|HEAD        api/partner/ratings/statistics ................................. Partner\RatingController@statistics
+  POST            api/payments/razorpay/webhook ........................................ Api\PaymentController@webhook
+  GET|HEAD        customer/bookings ....................... customer.bookings.index › Customer\BookingController@index
+  POST            customer/bookings/apply-coupon customer.bookings.apply-coupon › Customer\BookingController@applyCou…
+  GET|HEAD        customer/bookings/create/{service} .... customer.bookings.create › Customer\BookingController@create
+  POST            customer/bookings/select-payment customer.bookings.select-payment › Customer\BookingController@sele…
+  POST            customer/bookings/select-slot customer.bookings.select-slot › Customer\BookingController@selectSlot
+  GET|HEAD        customer/bookings/slots-ajax customer.bookings.slots.ajax › Customer\BookingController@getSlotsAjax
+  POST            customer/bookings/store ................. customer.bookings.store › Customer\BookingController@store
+  POST            customer/bookings/validate-coupon customer.bookings.validate-coupon › Customer\BookingController@va…
+  GET|HEAD        customer/bookings/{booking} ............... customer.bookings.show › Customer\BookingController@show
+  GET|HEAD        customer/bookings/{booking}/confirmation customer.bookings.confirmation › Customer\BookingControlle…
+  GET|HEAD        customer/bookings/{booking}/rate .......... customer.bookings.rate › Customer\BookingController@rate
+  POST            customer/bookings/{booking}/rate customer.bookings.store-rating › Customer\BookingController@storeR…
+  POST            customer/bookings/{booking}/upload-image customer.bookings.upload-image › Customer\BookingControlle…
+  GET|HEAD        customer/home ........................................ customer.home › Customer\HomeController@index
+  GET|HEAD        customer/login .................................. customer.login › Customer\AuthController@showLogin
+  POST            customer/logout ................................... customer.logout › Customer\AuthController@logout
+  GET|HEAD        customer/payments/{payment}/checkout customer.payments.checkout › Customer\PaymentController@checko…
+  GET|POST|HEAD   customer/payments/{payment}/failed .... customer.payments.failed › Customer\PaymentController@failed
+  GET|POST|HEAD   customer/payments/{payment}/success . customer.payments.success › Customer\PaymentController@success
+  GET|HEAD        customer/profile ......................... customer.profile.index › Customer\ProfileController@index
+  POST            customer/profile ....................... customer.profile.update › Customer\ProfileController@update
+  POST            customer/send-otp .............................. customer.send-otp › Customer\AuthController@sendOtp
+  GET|HEAD        customer/services ....................... customer.services.index › Customer\ServiceController@index
+  GET|HEAD        customer/services/{service} ............... customer.services.show › Customer\ServiceController@show
+  GET|HEAD        customer/vehicles ....................... customer.vehicles.index › Customer\VehicleController@index
+  POST            customer/vehicles ....................... customer.vehicles.store › Customer\VehicleController@store
+  GET|HEAD        customer/vehicles/create .............. customer.vehicles.create › Customer\VehicleController@create
+  GET|HEAD        customer/vehicles/{vehicle} ............... customer.vehicles.show › Customer\VehicleController@show
+  PUT|PATCH       customer/vehicles/{vehicle} ........... customer.vehicles.update › Customer\VehicleController@update
+  DELETE          customer/vehicles/{vehicle} ......... customer.vehicles.destroy › Customer\VehicleController@destroy
+  GET|HEAD        customer/vehicles/{vehicle}/edit .......... customer.vehicles.edit › Customer\VehicleController@edit
+  POST            customer/verify-otp ........................ customer.verify-otp › Customer\AuthController@verifyOtp
+  GET|HEAD        partner/earnings ......................... partner.earnings.index › Partner\EarningsController@index
+  GET|HEAD        partner/jobs/today ................................ partner.jobs.today › Partner\JobController@today
+  GET|HEAD        partner/jobs/upcoming ....................... partner.jobs.upcoming › Partner\JobController@upcoming
+  GET|HEAD        partner/jobs/{booking} .............................. partner.jobs.show › Partner\JobController@show
+  POST            partner/jobs/{booking}/accept ................... partner.jobs.accept › Partner\JobController@accept
+  POST            partner/jobs/{booking}/collect-cod ..... partner.jobs.collect-cod › Partner\JobController@collectCod
+  POST            partner/jobs/{booking}/complete ............. partner.jobs.complete › Partner\JobController@complete
+  POST            partner/jobs/{booking}/on-the-way ......... partner.jobs.on-the-way › Partner\JobController@onTheWay
+  POST            partner/jobs/{booking}/start ...................... partner.jobs.start › Partner\JobController@start
+  POST            partner/jobs/{booking}/upload-image .. partner.jobs.upload-image › Partner\JobController@uploadImage
+  GET|HEAD        partner/login ..................................... partner.login › Partner\AuthController@showLogin
+  POST            partner/logout ...................................... partner.logout › Partner\AuthController@logout
+  GET|HEAD        partner/profile ............................ partner.profile.index › Partner\ProfileController@index
+  POST            partner/profile .......................... partner.profile.update › Partner\ProfileController@update
+  GET|HEAD        partner/reviews ............................. partner.reviews.index › Partner\ReviewController@index
+  POST            partner/send-otp ................................. partner.send-otp › Partner\AuthController@sendOtp
+  POST            partner/verify-otp ........................... partner.verify-otp › Partner\AuthController@verifyOtp
+  GET|HEAD        storage/{path} storage.local › vendor/laravel/framework/src/Illuminate/Filesystem/FilesystemService…
+  PUT             storage/{path} storage.local.upload › vendor/laravel/framework/src/Illuminate/Filesystem/Filesystem…
+  GET|HEAD        up ..... vendor/laravel/framework/src/Illuminate/Foundation/Configuration/ApplicationBuilder.php:219
+
+                                                                                                  Showing [245] routes
+

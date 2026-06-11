@@ -1,0 +1,43 @@
+{
+  "expo": {
+    "name": "WheelWash",
+    "slug": "wheelwash",
+    "scheme": "wheelwash",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "plugins": [
+      "expo-router",
+      "expo-font",
+      "expo-notifications",
+      "expo-web-browser"
+    ],
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.wheelwash.customer",
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "WheelWash uses your location to find your service address for doorstep car wash bookings."
+      }
+    },
+    "android": {
+      "package": "com.wheelwash.app",
+      "googleServicesFile": "./google-services.json",
+      "adaptiveIcon": {
+        "backgroundColor": "#0877F2"
+      },
+      "permissions": [
+        "ACCESS_COARSE_LOCATION",
+        "ACCESS_FINE_LOCATION"
+      ]
+    },
+    "web": {
+      "bundler": "metro"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "wheelwash-local"
+      }
+    }
+  }
+}

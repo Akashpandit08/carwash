@@ -1,0 +1,14 @@
+wheelwashfull/public/storage
+wheelwashfull/storage
+wheelwashfull/vendor
+wheelwashfull/node_modules
+wheelwashfull/.env
+node_modules
+vendor
+storage
+.expo
+android
+ios
+*.log
+*.zip
+*.exe

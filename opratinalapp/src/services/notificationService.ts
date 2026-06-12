@@ -10,9 +10,10 @@ import apiClient from '../api/client';
 export function setupNotificationHandler(): void {
   Notifications.setNotificationHandler({
     handleNotification: async () => ({
-      shouldShowAlert: true,
+      shouldShowBanner: true,
+      shouldShowList: true,
       shouldPlaySound: true,
-      shouldSetBadge: true,
+      shouldSetBadge: false,
     }),
   });
 }

@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Log;
 
 class AuthService
 {
@@ -47,9 +48,15 @@ class AuthService
             ]
         );
         
+        Log::info('OTP generated for login testing', [
+            'mobile_number' => $mobileNumber,
+            'otp' => $otp,
+            'otp_debug' => config('app.otp_debug'),
+        ]);
+
         return [
             'user' => $user,
-            'otp' => config('app.env') === 'production' ? null : $otp, // Only return OTP in non-production
+            'otp' => $otp, // Always return to controller, controller decides based on otp_debug
         ];
     }
 

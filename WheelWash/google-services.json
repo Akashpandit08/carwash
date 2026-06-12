@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "816244798387",
+    "project_id": "wheelwash-9ca5f",
+    "storage_bucket": "wheelwash-9ca5f.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:816244798387:android:c3a1990cdbee7dabaf91c6",
+        "android_client_info": {
+          "package_name": "com.wheelwash.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCA09xr-FpIODf5Q5d5sPUpqhHvtr26Uik"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

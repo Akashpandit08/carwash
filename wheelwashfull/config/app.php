@@ -40,6 +40,8 @@ return [
     */
 
     'debug' => (bool) env('APP_DEBUG', false),
+    
+    'otp_debug' => env('OTP_DEBUG', false),
 
     /*
     |--------------------------------------------------------------------------

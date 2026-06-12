@@ -6,7 +6,6 @@
     "version": "1.0.0",
     "orientation": "portrait",
     "userInterfaceStyle": "light",
-    "newArchEnabled": true,
     "plugins": [
       "expo-router",
       "expo-font",
@@ -36,8 +35,10 @@
     },
     "extra": {
       "eas": {
-        "projectId": "wheelwash-local"
-      }
-    }
+        "projectId": "9dcf48e1-e287-4dda-98fb-5c45aabb6c0c"
+      },
+      "router": {}
+    },
+    "owner": "akashpandit08"
   }
 }

@@ -6,7 +6,6 @@ vendor/
 .env
 .env.*
 !.env.example
-google-services.json
 GoogleService-Info.plist
 
 # Expo / React Native

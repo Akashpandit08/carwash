@@ -15,8 +15,12 @@ export const LoginScreen = ({ navigation }: any) => {
     }
     setLoading(true);
     try {
-      await sendOtp(phone);
-      navigation.navigate('OtpScreen', { phone });
+      const response = await sendOtp(phone);
+      navigation.navigate('OtpScreen', { 
+        phone, 
+        mobile_number: phone, 
+        otp: response.otp 
+      });
     } catch (e: any) {
       Alert.alert('Error', e.response?.data?.message || 'Failed to send OTP');
       // If backend is not perfect yet, allow bypass for testing purposes

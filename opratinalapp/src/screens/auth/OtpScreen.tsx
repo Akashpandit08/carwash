@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, Alert } from 'react-native';
 import { AppInput } from '../../components/AppInput';
 import { AppButton } from '../../components/AppButton';
@@ -6,9 +6,15 @@ import { verifyOtp } from '../../api/authApi';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export const OtpScreen = ({ route, navigation }: any) => {
-  const { phone } = route.params;
+  const { phone, otp: devOtp } = route.params;
   const [otp, setOtp] = useState('');
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (devOtp) {
+      setOtp(String(devOtp));
+    }
+  }, [devOtp]);
 
   const handleVerify = async () => {
     if (!otp) {
@@ -48,6 +54,12 @@ export const OtpScreen = ({ route, navigation }: any) => {
     <View style={styles.container}>
       <Text style={styles.title}>Verify OTP</Text>
       <Text style={styles.subtitle}>Enter the code sent to {phone}</Text>
+
+      {!!devOtp && (
+        <View style={styles.devOtpContainer}>
+          <Text style={styles.devOtpLabel}>Development OTP: {devOtp}</Text>
+        </View>
+      )}
       
       <AppInput 
         label="OTP" 
@@ -81,5 +93,18 @@ const styles = StyleSheet.create({
     color: '#666',
     marginBottom: 32,
     textAlign: 'center',
+  },
+  devOtpContainer: {
+    backgroundColor: '#EAF4FF',
+    padding: 12,
+    borderRadius: 8,
+    marginBottom: 24,
+    alignItems: 'center',
+  },
+  devOtpLabel: {
+    color: '#007BFF',
+    fontWeight: 'bold',
+    fontSize: 16,
+    letterSpacing: 2,
   },
 });

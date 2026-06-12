@@ -34,10 +34,11 @@ class AuthController extends Controller
                 ],
             ];
 
-            // Include OTP in response for development environment
-            if ($result['otp']) {
+            // Include OTP in response if OTP_DEBUG is true
+            if (config('app.otp_debug')) {
+                $response['otp'] = $result['otp'];
                 $response['data']['otp'] = $result['otp'];
-                $response['data']['dev_note'] = 'OTP is only visible in non-production environments.';
+                $response['data']['dev_note'] = 'OTP is exposed because OTP_DEBUG is enabled.';
             }
 
             return response()->json($response, 200);

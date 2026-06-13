@@ -1,5 +1,5 @@
 import React, { useCallback, useState } from 'react';
-import { ActivityIndicator, ScrollView, StatusBar, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Image, ScrollView, StatusBar, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { Brand, Radius, Shadow, Spacing, Typography } from '@/constants/theme';
@@ -26,7 +26,7 @@ export default function ServicesScreen() {
       <StatusBar barStyle="dark-content" backgroundColor={Brand.white} />
       <SafeAreaView edges={['top']} style={{ backgroundColor: Brand.white }}>
         <View style={styles.topBar}>
-          <TouchableOpacity onPress={() => router.back()} style={styles.iconBtn}><Text style={styles.iconText}>Back</Text></TouchableOpacity>
+          <TouchableOpacity onPress={() => router.canGoBack() ? router.back() : router.replace('/')} style={styles.iconBtn}><Text style={styles.iconText}>Back</Text></TouchableOpacity>
           <Text style={styles.headerTitle}>Our Services</Text>
           <View style={styles.iconBtn} />
         </View>
@@ -38,6 +38,9 @@ export default function ServicesScreen() {
             <View style={styles.promoContent}>
               <Text style={styles.promoTitle}>Choose the perfect wash for your car</Text>
               <Text style={styles.promoSub}>Professional care at your doorstep</Text>
+              <TouchableOpacity style={styles.planLink} onPress={() => router.push('/monthly-plans')}>
+                <Text style={styles.planLinkText}>View Monthly Plans</Text>
+              </TouchableOpacity>
             </View>
           </View>
         </View>
@@ -58,11 +61,14 @@ export default function ServicesScreen() {
           {filteredServices.map((svc) => (
             <View key={String(svc.id)} style={styles.card}>
               <View style={styles.cardHeader}>
-                <View style={styles.iconWrap}><Text style={styles.serviceIcon}>Wash</Text></View>
+                {svc.image_url || svc.image ? (
+                  <Image source={{ uri: svc.image_url || svc.image }} style={styles.iconWrap} resizeMode="cover" />
+                ) : (
+                  <View style={styles.iconWrap}><Text style={styles.serviceIcon}>Wash</Text></View>
+                )}
                 <View style={styles.cardInfo}>
                   <View style={styles.titleRow}>
                     <Text style={styles.serviceName}>{svc.name || svc.title || 'Service'}</Text>
-                    <View style={styles.popularBadge}><Text style={styles.popularText}>API</Text></View>
                   </View>
                   <View style={styles.metaRow}>
                     <Text style={styles.metaText}>4.8 rating</Text>
@@ -109,6 +115,8 @@ const styles = StyleSheet.create({
   promoContent: { gap: 4 },
   promoTitle: { ...Typography.h3, color: Brand.white, lineHeight: 22 },
   promoSub: { ...Typography.small, color: Brand.white, opacity: 0.9 },
+  planLink: { alignSelf: 'flex-start', marginTop: Spacing.sm, backgroundColor: Brand.white, paddingHorizontal: Spacing.md, paddingVertical: Spacing.sm, borderRadius: Radius.round },
+  planLinkText: { ...Typography.smallMed, color: Brand.royalBlue, fontWeight: '800' },
   filterContainer: { paddingHorizontal: Spacing.xl, paddingBottom: Spacing.lg, gap: Spacing.sm },
   filterChip: { paddingHorizontal: Spacing.md, paddingVertical: Spacing.sm, borderRadius: Radius.round, backgroundColor: Brand.white, borderWidth: 1, borderColor: Brand.border },
   filterChipActive: { backgroundColor: Brand.royalBlue, borderColor: Brand.royalBlue },

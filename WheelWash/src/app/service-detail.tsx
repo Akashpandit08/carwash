@@ -17,11 +17,11 @@ export default function ServiceDetailScreen() {
   return (
     <SafeAreaView style={styles.root} edges={['top']}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.back}><Ionicons name="arrow-back" size={26} color={TEXT} /></TouchableOpacity>
+        <TouchableOpacity onPress={() => router.canGoBack() ? router.back() : router.replace('/')} style={styles.back}><Ionicons name="arrow-back" size={26} color={TEXT} /></TouchableOpacity>
         <Text style={styles.headerTitle}>Service Details</Text>
         <View style={styles.back} />
       </View>
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
+      <ScrollView style={styles.scroll} showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
         {loading && <Card style={styles.state}><ActivityIndicator color={PRIMARY} /><Text style={styles.desc}>Loading service...</Text></Card>}
         {error && <TouchableOpacity style={styles.errorBox} onPress={loadServices}><Text style={styles.errorText}>{error}</Text><Text style={styles.retryText}>Retry</Text></TouchableOpacity>}
         {service ? (
@@ -34,7 +34,7 @@ export default function ServiceDetailScreen() {
               )}
               <View style={styles.detailBody}>
                 <View style={styles.titleRow}>
-                  <View>
+                  <View style={styles.titleContent}>
                     <Text style={styles.badge}>Featured</Text>
                     <Text style={styles.title}>{service.name || service.title || 'Service'}</Text>
                   </View>
@@ -73,12 +73,14 @@ const styles = StyleSheet.create({
   header: { height: 64, paddingHorizontal: 22, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   back: { width: 42, height: 42, alignItems: 'center', justifyContent: 'center' },
   headerTitle: { color: TEXT, fontSize: 26, fontWeight: '900' },
-  content: { padding: 22, gap: 18, paddingBottom: 28 },
+  scroll: { flex: 1 },
+  content: { padding: 22, gap: 18, paddingBottom: 60 },
   heroCard: { overflow: 'hidden' },
   heroImage: { width: '100%', height: 260 },
   heroImageEmpty: { alignItems: 'center', justifyContent: 'center', backgroundColor: '#EEF4FA' },
   detailBody: { padding: 22 },
-  titleRow: { flexDirection: 'row', justifyContent: 'space-between', gap: 14 },
+  titleRow: { flexDirection: 'row', justifyContent: 'space-between', gap: 14, alignItems: 'flex-start' },
+  titleContent: { flex: 1, alignItems: 'flex-start' },
   badge: { alignSelf: 'flex-start', backgroundColor: PRIMARY, color: '#fff', paddingHorizontal: 10, paddingVertical: 6, borderRadius: 7, fontSize: 15, fontWeight: '900' },
   title: { color: TEXT, fontSize: 31, fontWeight: '900', marginTop: 12 },
   rating: { backgroundColor: '#12A968', paddingHorizontal: 11, paddingVertical: 8, borderRadius: 9, alignSelf: 'flex-start' },

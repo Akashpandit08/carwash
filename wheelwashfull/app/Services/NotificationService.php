@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Constants\UserRole;
 use App\Models\Booking;
 use App\Models\AppNotification;
 use App\Models\NotificationLog;
@@ -122,9 +123,11 @@ class NotificationService
         ?string $soundName = null
     ): void {
         try {
-            $users = User::where('role', $role)->get();
+            $users = $role === UserRole::ADMIN
+                ? User::whereIn('role', UserRole::ADMIN_ROLES)->get()
+                : User::where('role', $role)->get();
             foreach ($users as $user) {
-                $this->sendPushToUser($user->id, $role, $title, $body, $bookingId, $type, $data, $soundName);
+                $this->sendPushToUser($user->id, $user->role, $title, $body, $bookingId, $type, $data, $soundName);
             }
         } catch (Throwable $e) {
             Log::error('sendPushToRole failed', [

@@ -111,6 +111,7 @@ class BookingService
     {
         return DB::transaction(function () use ($data) {
             $pricing = $this->calculatePricing($data['service_id'], $data['coupon_code'] ?? null);
+            $service = Service::findOrFail($data['service_id']);
 
             // If coupon was applied successfully, increment its usage count
             if ($pricing['coupon_id']) {
@@ -122,11 +123,38 @@ class BookingService
             $fees = $this->calculateDeliveryFees($serviceMode);
             $totalAmount = $pricing['final_price'] + $fees['pickup_fee'] + $fees['drop_fee'];
 
+            $payableAmount = $totalAmount;
+            $subscription = null;
+
+            if (!empty($data['customer_subscription_id'])) {
+                $subscription = \App\Models\CustomerSubscription::where('id', $data['customer_subscription_id'])
+                    ->where('user_id', $data['user_id'])
+                    ->where('status', 'active')
+                    ->where('remaining_washes', '>', 0)
+                    ->whereDate('start_date', '<=', $data['booking_date'])
+                    ->whereDate('end_date', '>=', $data['booking_date'])
+                    ->first();
+
+                if (!$subscription) {
+                    throw new \InvalidArgumentException('Invalid, exhausted, or expired subscription.');
+                }
+
+                $payableAmount = 0;
+                $data['booking_source'] = 'subscription';
+                $data['payment_method'] = 'subscription';
+                $data['subscription_wash_type'] = $washType ?? 'exterior';
+            }
+
             $booking = Booking::create([
                 'booking_number' => $this->generateBookingNumber(),
                 'user_id' => $data['user_id'],
+                'customer_subscription_id' => $data['customer_subscription_id'] ?? null,
+                'booking_source' => $data['booking_source'] ?? 'normal',
+                'subscription_wash_type' => $data['subscription_wash_type'] ?? null,
                 'vehicle_id' => $data['vehicle_id'],
                 'service_id' => $data['service_id'],
+                'service_city_id' => $service->service_city_id ?? $data['service_city_id'] ?? null,
+                'service_zone_id' => $service->service_zone_id ?? $data['service_zone_id'] ?? null,
                 'service_mode' => $serviceMode,
                 'wash_type' => $washType,
                 'booking_date' => $data['booking_date'],
@@ -138,6 +166,7 @@ class BookingService
                 'discount' => $pricing['discount'],
                 'final_price' => $pricing['final_price'],
                 'total_amount' => $totalAmount,
+                'payable_amount' => $payableAmount,
                 'coupon_id' => $pricing['coupon_id'],
                 'payment_method' => $data['payment_method'],
                 'payment_status' => 'pending',
@@ -151,6 +180,15 @@ class BookingService
                     : null,
                 'notes' => $data['notes'] ?? null,
             ]);
+
+            if ($subscription) {
+                \App\Models\SubscriptionBooking::create([
+                    'customer_subscription_id' => $subscription->id,
+                    'booking_id' => $booking->id,
+                    'wash_type' => $data['subscription_wash_type'] ?? 'exterior',
+                    'status' => 'reserved',
+                ]);
+            }
 
             if ($washType === WashType::DOOR_TO_DOOR) {
                 $booking = $this->bookingAssignmentService->assignForDoorToDoor($booking, (float) $data['latitude'], (float) $data['longitude']);

@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Coupon;
+use App\Services\CityScopeService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 
@@ -12,9 +13,12 @@ class CouponController extends Controller
     /**
      * Display a listing of coupons
      */
-    public function index()
+    public function index(CityScopeService $cityScope)
     {
-        $coupons = Coupon::orderBy('created_at', 'desc')->get();
+        $query = Coupon::query();
+        $cityScope->apply($query, auth()->user());
+
+        $coupons = $query->orderBy('created_at', 'desc')->get();
 
         return response()->json([
             'success' => true,
@@ -25,10 +29,12 @@ class CouponController extends Controller
     /**
      * Store a newly created coupon
      */
-    public function store(Request $request)
+    public function store(Request $request, CityScopeService $cityScope)
     {
         $validator = Validator::make($request->all(), [
             'code' => 'required|string|unique:coupons,code|max:50',
+            'service_city_id' => 'nullable|exists:service_cities,id',
+            'service_zone_id' => 'nullable|exists:service_zones,id',
             'description' => 'nullable|string|max:500',
             'discount_type' => 'required|in:percentage,fixed',
             'discount_value' => 'required|numeric|min:0',
@@ -60,6 +66,8 @@ class CouponController extends Controller
         $data = $validator->validated();
         $data['code'] = strtoupper($data['code']);
         $data['used_count'] = 0;
+        $data['service_city_id'] = $cityScope->allowedCityId(auth()->user(), $request->service_city_id);
+        $data['service_zone_id'] = $request->service_zone_id;
 
         $coupon = Coupon::create($data);
 
@@ -73,8 +81,10 @@ class CouponController extends Controller
     /**
      * Display the specified coupon
      */
-    public function show(Coupon $coupon)
+    public function show(Coupon $coupon, CityScopeService $cityScope)
     {
+        $cityScope->ensureCanAccessModel(auth()->user(), $coupon);
+
         return response()->json([
             'success' => true,
             'data' => $coupon,
@@ -84,10 +94,14 @@ class CouponController extends Controller
     /**
      * Update the specified coupon
      */
-    public function update(Request $request, Coupon $coupon)
+    public function update(Request $request, Coupon $coupon, CityScopeService $cityScope)
     {
+        $cityScope->ensureCanAccessModel(auth()->user(), $coupon);
+
         $validator = Validator::make($request->all(), [
             'code' => 'required|string|max:50|unique:coupons,code,' . $coupon->id,
+            'service_city_id' => 'nullable|exists:service_cities,id',
+            'service_zone_id' => 'nullable|exists:service_zones,id',
             'description' => 'nullable|string|max:500',
             'discount_type' => 'required|in:percentage,fixed',
             'discount_value' => 'required|numeric|min:0',
@@ -125,6 +139,8 @@ class CouponController extends Controller
 
         $data = $validator->validated();
         $data['code'] = strtoupper($data['code']);
+        $data['service_city_id'] = $cityScope->allowedCityId(auth()->user(), $request->service_city_id);
+        $data['service_zone_id'] = $request->service_zone_id;
 
         $coupon->update($data);
 
@@ -138,8 +154,10 @@ class CouponController extends Controller
     /**
      * Remove the specified coupon
      */
-    public function destroy(Coupon $coupon)
+    public function destroy(Coupon $coupon, CityScopeService $cityScope)
     {
+        $cityScope->ensureCanAccessModel(auth()->user(), $coupon);
+
         // Check if coupon is being used
         if ($coupon->used_count > 0) {
             return response()->json([
@@ -159,8 +177,10 @@ class CouponController extends Controller
     /**
      * Toggle coupon active status
      */
-    public function toggleStatus(Coupon $coupon)
+    public function toggleStatus(Coupon $coupon, CityScopeService $cityScope)
     {
+        $cityScope->ensureCanAccessModel(auth()->user(), $coupon);
+
         $coupon->update(['is_active' => !$coupon->is_active]);
 
         return response()->json([
@@ -173,8 +193,10 @@ class CouponController extends Controller
     /**
      * Get coupon statistics
      */
-    public function statistics(Coupon $coupon)
+    public function statistics(Coupon $coupon, CityScopeService $cityScope)
     {
+        $cityScope->ensureCanAccessModel(auth()->user(), $coupon);
+
         $totalBookings = $coupon->bookings()->count();
         $totalRevenue = $coupon->bookings()->sum('final_price');
         $totalDiscount = $coupon->bookings()->sum('discount');

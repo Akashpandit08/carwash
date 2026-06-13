@@ -15,6 +15,10 @@ class SlotController extends Controller
     {
         $query = Slot::query();
 
+        if ($request->filled('service_city_id')) {
+            $query->where('service_city_id', $request->service_city_id);
+        }
+
         // Search
         if ($request->search) {
             $query->where('start_time', 'like', '%' . $request->search . '%')

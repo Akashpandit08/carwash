@@ -54,6 +54,14 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     
     // Dashboard
     Route::get('/dashboard', [\App\Http\Controllers\Admin\DashboardController::class, 'index'])->name('dashboard');
+
+    Route::middleware('super_admin')->group(function () {
+        Route::resource('cities', \App\Http\Controllers\Admin\ServiceCityController::class)->except(['create', 'edit', 'show']);
+        Route::resource('zones', \App\Http\Controllers\Admin\ServiceZoneController::class)->except(['create', 'edit', 'show']);
+        Route::resource('city-admins', \App\Http\Controllers\Admin\CityAdminController::class)
+            ->parameters(['city-admins' => 'cityAdmin'])
+            ->except(['create', 'edit', 'show']);
+    });
     
     // Customers
     Route::get('/customers', [\App\Http\Controllers\Admin\CustomerController::class, 'index'])->name('customers.index');
@@ -61,10 +69,16 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     
     // Partners
     Route::get('/partners', [\App\Http\Controllers\Admin\PartnerController::class, 'index'])->name('partners.index');
+    Route::get('/partners/create', [\App\Http\Controllers\Admin\PartnerController::class, 'create'])->name('partners.create');
+    Route::post('/partners', [\App\Http\Controllers\Admin\PartnerController::class, 'store'])->name('partners.store');
+    Route::get('/partners/{partner}/edit', [\App\Http\Controllers\Admin\PartnerController::class, 'edit'])->name('partners.edit');
+    Route::put('/partners/{partner}', [\App\Http\Controllers\Admin\PartnerController::class, 'update'])->name('partners.update');
+    Route::patch('/partners/{partner}/toggle-status', [\App\Http\Controllers\Admin\PartnerController::class, 'toggleStatus'])->name('partners.toggleStatus');
     Route::get('/partners/{partner}', [\App\Http\Controllers\Admin\PartnerController::class, 'show'])->name('partners.show');
     
     // Services
     Route::resource('services', \App\Http\Controllers\Admin\ServiceController::class);
+    Route::resource('service-categories', \App\Http\Controllers\Admin\ServiceCategoryController::class);
 
     // Banners
     Route::resource('banners', \App\Http\Controllers\Admin\BannerController::class)->except(['show']);
@@ -77,9 +91,25 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     // Bookings
     Route::get('/bookings', [\App\Http\Controllers\Admin\BookingController::class, 'index'])->name('bookings.index');
     Route::get('/bookings/{booking}', [\App\Http\Controllers\Admin\BookingController::class, 'show'])->name('bookings.show');
-    Route::post('/bookings/{booking}/assign-partner', [\App\Http\Controllers\Admin\BookingController::class, 'assignPartner'])->name('bookings.assignPartner');
+    Route::post('/bookings/{booking}/assign-team', [\App\Http\Controllers\Admin\BookingController::class, 'assignTeam'])->name('bookings.assignTeam');
     Route::post('/bookings/{booking}/update-status', [\App\Http\Controllers\Admin\BookingController::class, 'updateStatus'])->name('bookings.updateStatus');
     Route::post('/bookings/{booking}/update-payment-status', [\App\Http\Controllers\Admin\BookingController::class, 'updatePaymentStatus'])->name('bookings.updatePaymentStatus');
+    Route::get('/assign-team', [\App\Http\Controllers\Admin\AdminPageController::class, 'assignTeam'])->name('assign-team.index');
+    Route::post('/assign-team/{booking}', [\App\Http\Controllers\Admin\AdminPageController::class, 'assignTeamStore'])->name('assign-team.store');
+    Route::get('/team-management', [\App\Http\Controllers\Admin\AdminPageController::class, 'teamManagement'])->name('team-management.index');
+    Route::prefix('team/{type}')->name('team.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\Admin\TeamController::class, 'index'])->name('index');
+        Route::get('/create', [\App\Http\Controllers\Admin\TeamController::class, 'create'])->name('create');
+        Route::post('/', [\App\Http\Controllers\Admin\TeamController::class, 'store'])->name('store');
+        Route::get('/{user}/edit', [\App\Http\Controllers\Admin\TeamController::class, 'edit'])->name('edit');
+        Route::put('/{user}', [\App\Http\Controllers\Admin\TeamController::class, 'update'])->name('update');
+        Route::patch('/{user}/toggle', [\App\Http\Controllers\Admin\TeamController::class, 'toggle'])->name('toggle');
+    });
+    Route::get('/subscriptions', [\App\Http\Controllers\Admin\AdminPageController::class, 'subscriptions'])->name('subscriptions.index');
+    Route::resource('subscription-plans', \App\Http\Controllers\Admin\SubscriptionPlanController::class)->except(['show', 'destroy']);
+    Route::patch('/subscription-plans/{subscriptionPlan}/toggle', [\App\Http\Controllers\Admin\SubscriptionPlanController::class, 'toggle'])->name('subscription-plans.toggle');
+    Route::get('/earnings', [\App\Http\Controllers\Admin\AdminPageController::class, 'earnings'])->name('earnings.index');
+    Route::get('/settings', [\App\Http\Controllers\Admin\AdminPageController::class, 'settings'])->name('settings.index');
     
     // Payments
     Route::get('/payments', [\App\Http\Controllers\Admin\PaymentController::class, 'index'])->name('payments.index');

@@ -24,7 +24,7 @@ class ReportController extends Controller
     public function index(Request $request)
     {
         $filters = $request->only([
-            'date_from', 'date_to', 'partner_id', 'service_id', 'status', 'payment_status'
+            'date_from', 'date_to', 'partner_id', 'service_id', 'status', 'payment_status', 'service_city_id'
         ]);
 
         // Default to last 30 days if no date provided
@@ -42,8 +42,13 @@ class ReportController extends Controller
         $couponUsage = $this->reportService->getCouponUsage($filters);
 
         // Fetch options for filter dropdowns
-        $partners = User::where('role', 'partner')->select('id', 'name')->get();
-        $services = \App\Models\Service::select('id', 'name')->get();
+        $partners = User::where('role', 'partner')
+            ->when($request->filled('service_city_id'), fn ($query) => $query->where('service_city_id', $request->service_city_id))
+            ->select('id', 'name')
+            ->get();
+        $services = \App\Models\Service::when($request->filled('service_city_id'), fn ($query) => $query->where('service_city_id', $request->service_city_id))
+            ->select('id', 'name')
+            ->get();
 
         return view('admin.reports.index', compact(
             'filters',

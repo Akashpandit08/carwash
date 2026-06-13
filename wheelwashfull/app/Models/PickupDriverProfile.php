@@ -9,7 +9,7 @@ class PickupDriverProfile extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['user_id', 'partner_id', 'vehicle_type', 'license_number', 'service_area', 'latitude', 'longitude', 'current_status', 'rating', 'total_jobs'];
+    protected $fillable = ['user_id', 'partner_id', 'vehicle_type', 'license_number', 'service_area', 'service_radius', 'latitude', 'longitude', 'current_status', 'rating', 'total_jobs'];
 
     protected $casts = ['latitude' => 'decimal:8', 'longitude' => 'decimal:8', 'rating' => 'decimal:2'];
 

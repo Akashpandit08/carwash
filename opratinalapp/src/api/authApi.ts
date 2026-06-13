@@ -8,5 +8,6 @@ export const sendOtp = async (phone: string) => {
 };
 
 export const verifyOtp = (phone: string, otp: string) => apiClient.post('/auth/verify-otp', { mobile_number: phone, otp });
+export const loginWithPassword = (phone: string, password: string) => apiClient.post('/auth/login', { mobile_number: phone, password });
 
 export const logout = () => apiClient.post('/auth/logout');

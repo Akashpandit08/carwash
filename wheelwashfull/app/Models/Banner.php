@@ -13,6 +13,8 @@ class Banner extends Model
 
     protected $fillable = [
         'title',
+        'service_city_id',
+        'service_zone_id',
         'subtitle',
         'image',
         'redirect_type',

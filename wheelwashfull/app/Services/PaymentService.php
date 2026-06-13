@@ -18,11 +18,33 @@ class PaymentService
      */
     public function initialize(Booking $booking, string $method): ?Payment
     {
+        if ($method === 'subscription') {
+            return $this->initializeSubscription($booking);
+        }
+
         if ($method === 'cod') {
             return $this->initializeCod($booking);
         }
 
         return $this->initializeOnline($booking);
+    }
+
+    protected function initializeSubscription(Booking $booking): Payment
+    {
+        $booking->update([
+            'payment_method' => 'subscription',
+            'payment_status' => 'paid',
+        ]);
+
+        return Payment::create([
+            'booking_id' => $booking->id,
+            'payment_reference' => $this->generatePaymentReference(),
+            'method' => 'subscription',
+            'status' => 'paid',
+            'amount' => 0,
+            'currency' => 'INR',
+            'paid_at' => now(),
+        ]);
     }
 
     protected function initializeCod(Booking $booking): Payment

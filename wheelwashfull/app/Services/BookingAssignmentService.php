@@ -35,7 +35,11 @@ class BookingAssignmentService
 
         return DB::transaction(function () use ($booking, $worker) {
             $booking = $this->confirmIfPending($booking, 'Booking auto-confirmed before worker assignment');
-            $booking->forceFill(['worker_id' => $worker->id])->save();
+            $booking->forceFill([
+                'worker_id' => $worker->id,
+                'service_city_id' => $worker->service_city_id,
+                'service_zone_id' => $worker->service_zone_id,
+            ])->save();
             $this->upsertAssignment($booking->fresh(), ['worker_id' => $worker->id], 'Auto-assigned nearest worker');
             $booking = $this->stateService->transition($booking->fresh(), BookingStatus::WORKER_ASSIGNED, null, 'Worker auto-assigned');
             $this->notificationService->workerAssigned($booking->fresh(), $worker);
@@ -65,6 +69,8 @@ class BookingAssignmentService
                 'pickup_driver_id' => $driver->id,
                 'delivery_driver_id' => $deliveryDriver->id,
                 'partner_id' => $partner->id,
+                'service_city_id' => $partner->service_city_id,
+                'service_zone_id' => $partner->service_zone_id,
             ])->save();
             $this->upsertAssignment($booking->fresh(), [
                 'pickup_driver_id' => $driver->id,

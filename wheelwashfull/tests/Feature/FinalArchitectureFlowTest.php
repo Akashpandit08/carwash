@@ -124,22 +124,31 @@ class FinalArchitectureFlowTest extends TestCase
             ->assertJsonPath('data.status', BookingStatus::WORKER_ASSIGNED);
 
         $this->actingAs($this->worker, 'api')
-            ->postJson("/api/operations/worker/jobs/{$bookingId}/status", ['status' => BookingStatus::WORKER_ON_THE_WAY])
+            ->postJson("/api/worker/jobs/{$bookingId}/start-travel")
             ->assertOk();
 
         $this->actingAs($this->worker, 'api')
-            ->postJson("/api/operations/worker/jobs/{$bookingId}/status", ['status' => BookingStatus::SERVICE_STARTED])
+            ->postJson("/api/worker/jobs/{$bookingId}/arrived", $this->customerGps())
             ->assertOk();
 
-        $this->uploadMedia('worker', $bookingId, MediaType::BEFORE_IMAGE);
-        $this->uploadMedia('worker', $bookingId, MediaType::AFTER_IMAGE);
+        $this->uploadMedia('worker', $bookingId, MediaType::BEFORE_IMAGE, 4);
 
         $this->actingAs($this->worker, 'api')
-            ->postJson("/api/operations/worker/jobs/{$bookingId}/status", ['status' => BookingStatus::SERVICE_COMPLETED])
+            ->postJson("/api/worker/jobs/{$bookingId}/start-service")
+            ->assertOk();
+
+        $this->uploadMedia('worker', $bookingId, MediaType::AFTER_IMAGE, 4);
+
+        $this->actingAs($this->worker, 'api')
+            ->postJson("/api/worker/jobs/{$bookingId}/complete-service")
             ->assertOk();
 
         $this->actingAs($this->worker, 'api')
-            ->postJson("/api/operations/worker/jobs/{$bookingId}/status", ['status' => BookingStatus::COMPLETED])
+            ->postJson("/api/worker/jobs/{$bookingId}/collect-cash-complete", [
+                'amount' => 499,
+                'payment_mode' => 'cash',
+                'payment_status' => 'paid',
+            ])
             ->assertOk();
 
         $this->assertDatabaseHas('payouts', ['booking_id' => $bookingId, 'user_id' => $this->worker->id]);
@@ -158,7 +167,7 @@ class FinalArchitectureFlowTest extends TestCase
             ->postJson("/api/operations/partner/jobs/{$bookingId}/status", ['status' => BookingStatus::SERVICE_STARTED])
             ->assertOk();
 
-        $this->uploadMedia('partner', $bookingId, MediaType::PARTNER_SERVICE_PROOF);
+        $this->uploadMedia('partner', $bookingId, MediaType::PARTNER_SERVICE_PROOF, 4);
 
         $this->actingAs($this->partner, 'api')
             ->postJson("/api/operations/partner/jobs/{$bookingId}/status", ['status' => BookingStatus::SERVICE_COMPLETED])
@@ -194,28 +203,56 @@ class FinalArchitectureFlowTest extends TestCase
         $this->actingAs($this->customer, 'api')
             ->getJson("/api/customer/bookings/{$bookingId}/tracking")
             ->assertOk()
-            ->assertJsonPath('data.0.role', UserRole::PICKUP_DRIVER);
+            ->assertJsonPath('data.booking_id', $bookingId)
+            ->assertJsonPath('data.driver_location.latitude', 27.1767);
 
-        $this->driverStatus($bookingId, BookingStatus::DRIVER_ON_THE_WAY);
-        $this->uploadMedia('driver', $bookingId, MediaType::PICKUP_PROOF);
-        $this->driverStatus($bookingId, BookingStatus::CAR_PICKED_UP);
-        $this->driverStatus($bookingId, BookingStatus::REACHED_PARTNER);
+        $this->actingAs($this->driver, 'api')
+            ->postJson("/api/pickup-driver/jobs/{$bookingId}/start-pickup-travel")
+            ->assertOk();
+
+        $this->actingAs($this->driver, 'api')
+            ->postJson("/api/pickup-driver/jobs/{$bookingId}/arrived-customer", $this->customerGps())
+            ->assertOk();
+
+        $this->uploadMedia('pickup-driver', $bookingId, MediaType::PICKUP_PROOF, 4);
+
+        $this->actingAs($this->driver, 'api')
+            ->postJson("/api/pickup-driver/jobs/{$bookingId}/pickup-vehicle")
+            ->assertOk();
+
+        $this->actingAs($this->driver, 'api')
+            ->postJson("/api/pickup-driver/jobs/{$bookingId}/arrived-partner", $this->partnerGps())
+            ->assertOk();
 
         $this->actingAs($this->partner, 'api')
             ->postJson("/api/operations/partner/jobs/{$bookingId}/status", ['status' => BookingStatus::SERVICE_STARTED])
             ->assertOk();
 
-        $this->uploadMedia('partner', $bookingId, MediaType::PARTNER_SERVICE_PROOF);
+        $this->uploadMedia('partner', $bookingId, MediaType::PARTNER_SERVICE_PROOF, 4);
         $this->actingAs($this->partner, 'api')
             ->postJson("/api/operations/partner/jobs/{$bookingId}/status", ['status' => BookingStatus::SERVICE_COMPLETED])
             ->assertOk();
 
-        $this->driverStatus($bookingId, BookingStatus::OUT_FOR_DELIVERY);
-        $this->uploadMedia('driver', $bookingId, MediaType::DELIVERY_PROOF);
-        $this->driverStatus($bookingId, BookingStatus::DELIVERED);
+        $this->actingAs($this->driver, 'api')
+            ->postJson("/api/pickup-driver/jobs/{$bookingId}/start-delivery")
+            ->assertOk();
 
-        $this->actingAs($this->admin, 'api')
-            ->postJson("/api/admin/bookings/{$bookingId}/status", ['status' => BookingStatus::COMPLETED])
+        $this->actingAs($this->driver, 'api')
+            ->postJson("/api/pickup-driver/jobs/{$bookingId}/arrived-delivery", $this->customerGps())
+            ->assertOk();
+
+        $this->uploadMedia('pickup-driver', $bookingId, MediaType::DELIVERY_PROOF, 4);
+
+        $this->actingAs($this->driver, 'api')
+            ->postJson("/api/pickup-driver/jobs/{$bookingId}/deliver-vehicle")
+            ->assertOk();
+
+        $this->actingAs($this->driver, 'api')
+            ->postJson("/api/pickup-driver/jobs/{$bookingId}/collect-cash-complete", [
+                'amount' => 499,
+                'payment_mode' => 'cash',
+                'payment_status' => 'paid',
+            ])
             ->assertOk();
 
         $this->assertDatabaseHas('payouts', ['booking_id' => $bookingId, 'user_id' => $this->partner->id]);
@@ -308,20 +345,27 @@ class FinalArchitectureFlowTest extends TestCase
         return $response->json('data.id');
     }
 
-    protected function uploadMedia(string $role, int $bookingId, string $type): void
+    protected function uploadMedia(string $role, int $bookingId, string $type, int $count = 1): void
     {
         $user = match ($role) {
             'worker' => $this->worker,
+            'pickup-driver' => $this->driver,
             'driver' => $this->driver,
             default => $this->partner,
         };
 
-        $this->actingAs($user, 'api')
-            ->postJson("/api/operations/{$role}/jobs/{$bookingId}/media", [
-                'type' => $type,
-                'file' => UploadedFile::fake()->create("{$type}.jpg", 64, 'image/jpeg'),
-            ])
-            ->assertCreated();
+        $routeRole = $role === 'pickup-driver' ? 'pickup-driver' : "operations/{$role}";
+        $sides = ['front', 'back', 'left', 'right'];
+
+        for ($i = 0; $i < $count; $i++) {
+            $this->actingAs($user, 'api')
+                ->post("/api/{$routeRole}/jobs/{$bookingId}/media", [
+                    'type' => $type,
+                    'side' => $sides[$i] ?? 'extra',
+                    'file' => UploadedFile::fake()->create("{$type}_{$i}.jpg", 64, 'image/jpeg'),
+                ])
+                ->assertCreated();
+        }
     }
 
     protected function driverStatus(int $bookingId, string $status): void
@@ -329,6 +373,16 @@ class FinalArchitectureFlowTest extends TestCase
         $this->actingAs($this->driver, 'api')
             ->postJson("/api/operations/driver/jobs/{$bookingId}/status", ['status' => $status])
             ->assertOk();
+    }
+
+    protected function customerGps(): array
+    {
+        return ['latitude' => 27.1767, 'longitude' => 78.0081];
+    }
+
+    protected function partnerGps(): array
+    {
+        return ['latitude' => 27.1769, 'longitude' => 78.0083];
     }
 
     protected function user(string $role, string $mobile): User

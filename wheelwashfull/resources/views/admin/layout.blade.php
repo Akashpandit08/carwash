@@ -33,7 +33,8 @@
             color: #ecf0f1;
             position: fixed;
             height: 100vh;
-            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
             box-shadow: 2px 0 5px rgba(0,0,0,0.1);
             z-index: 1000;
         }
@@ -42,6 +43,7 @@
             padding: 20px;
             border-bottom: 1px solid rgba(255,255,255,0.1);
             text-align: center;
+            flex-shrink: 0;
         }
 
         .sidebar-header h5 {
@@ -52,6 +54,8 @@
 
         .sidebar-nav {
             padding: 10px 0;
+            flex: 1;
+            overflow-y: auto;
         }
 
         .nav-item {
@@ -234,55 +238,7 @@
                 <h5><i class="bi bi-speedometer2"></i> WashMate Admin</h5>
             </div>
             <nav class="sidebar-nav">
-                <a href="{{ route('admin.dashboard') }}" class="nav-link {{ Route::is('admin.dashboard') ? 'active' : '' }}">
-                    <i class="bi bi-house-fill"></i>
-                    <span>Dashboard</span>
-                </a>
-                
-                <a href="{{ route('admin.customers.index') }}" class="nav-link {{ Route::is('admin.customers.*') ? 'active' : '' }}">
-                    <i class="bi bi-people-fill"></i>
-                    <span>Customers</span>
-                </a>
-
-                <a href="{{ route('admin.partners.index') }}" class="nav-link {{ Route::is('admin.partners.*') ? 'active' : '' }}">
-                    <i class="bi bi-person-badge"></i>
-                    <span>Partners</span>
-                </a>
-
-                <a href="{{ route('admin.services.index') }}" class="nav-link {{ Route::is('admin.services.*') ? 'active' : '' }}">
-                    <i class="bi bi-gear-fill"></i>
-                    <span>Services</span>
-                </a>
-
-                <a href="{{ route('admin.slots.index') }}" class="nav-link {{ Route::is('admin.slots.*') ? 'active' : '' }}">
-                    <i class="bi bi-calendar2-check"></i>
-                    <span>Slots</span>
-                </a>
-
-                <a href="{{ route('admin.coupons.index') }}" class="nav-link {{ Route::is('admin.coupons.*') ? 'active' : '' }}">
-                    <i class="bi bi-ticket-perforated"></i>
-                    <span>Coupons</span>
-                </a>
-
-                <a href="{{ route('admin.bookings.index') }}" class="nav-link {{ Route::is('admin.bookings.*') ? 'active' : '' }}">
-                    <i class="bi bi-calendar-check"></i>
-                    <span>Bookings</span>
-                </a>
-
-                <a href="{{ route('admin.payments.index') }}" class="nav-link {{ Route::is('admin.payments.*') ? 'active' : '' }}">
-                    <i class="bi bi-credit-card"></i>
-                    <span>Payments</span>
-                </a>
-
-                <a href="{{ route('admin.reviews.index') }}" class="nav-link {{ Route::is('admin.reviews.*') ? 'active' : '' }}">
-                    <i class="bi bi-star-fill"></i>
-                    <span>Reviews</span>
-                </a>
-
-                <a href="{{ route('admin.reports.index') }}" class="nav-link {{ Route::is('admin.reports.*') ? 'active' : '' }}">
-                    <i class="bi bi-graph-up"></i>
-                    <span>Reports</span>
-                </a>
+                @include('admin.partials.nav')
 
                 <hr style="border-color: rgba(255,255,255,0.1); margin: 15px 0;">
 
@@ -307,6 +263,7 @@
                     <h6 class="topbar-title mb-0">@yield('page_title', 'Dashboard')</h6>
                 </div>
                 <div class="topbar-actions">
+                    @include('admin.partials.city-filter')
                     <div class="user-menu">
                         <span class="d-none d-md-inline">{{ Auth::user()->name }}</span>
                         <img src="https://ui-avatars.com/api/?name={{ Auth::user()->name }}" alt="User" class="rounded-circle" style="width: 35px; height: 35px;">

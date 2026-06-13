@@ -6,6 +6,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { BORDER, MUTED, PRIMARY, TEXT } from '@/lib/wheelwash-data';
 import { Logo, PrimaryButton } from '@/components/wheelwash/ui';
 import { useLocationStore } from '@/store/locationStore';
+import { cityIdsForName } from '@/lib/wheelwash-data';
 
 export default function ManualLocationScreen() {
   const [city, setCity] = useState('Agra');
@@ -20,6 +21,7 @@ export default function ManualLocationScreen() {
       pincode,
       region: 'UP',
       fullAddress: `${area}, ${city}, Uttar Pradesh - ${pincode}`,
+      ...cityIdsForName(city),
     });
     router.replace('/(tabs)');
   };
@@ -27,7 +29,7 @@ export default function ManualLocationScreen() {
   return (
     <SafeAreaView style={styles.root}>
       <View style={styles.top}>
-        <TouchableOpacity style={styles.back} onPress={() => router.back()}>
+        <TouchableOpacity style={styles.back} onPress={() => router.canGoBack() ? router.back() : router.replace('/')}>
           <Ionicons name="arrow-back" size={26} color={TEXT} />
         </TouchableOpacity>
         <Logo />

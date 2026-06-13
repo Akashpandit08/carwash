@@ -47,7 +47,7 @@ export default function OtpScreen() {
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.root}>
         <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
           <View style={styles.header}>
-            <TouchableOpacity style={styles.back} onPress={() => router.back()}>
+            <TouchableOpacity style={styles.back} onPress={() => router.canGoBack() ? router.back() : router.replace('/')}>
               <Ionicons name="arrow-back" size={26} color={TEXT} />
             </TouchableOpacity>
             <Logo />
@@ -77,7 +77,9 @@ export default function OtpScreen() {
               editable={!loading}
               returnKeyType="done"
             />
-            <PrimaryButton title={loading ? 'Verifying...' : 'Verify & Continue'} icon="checkmark-circle-outline" onPress={loading ? undefined : verify} />
+            <TouchableOpacity style={styles.button} onPress={loading ? undefined : verify} activeOpacity={0.8}>
+              <Text style={styles.buttonText}>{loading ? 'Verifying...' : 'Verify & Continue'}</Text>
+            </TouchableOpacity>
             {loading && <ActivityIndicator style={styles.loader} color={PRIMARY} />}
             <Text style={styles.resend}>Did not receive OTP? <Text style={styles.link}>Go back and resend</Text></Text>
           </View>
@@ -100,6 +102,20 @@ const styles = StyleSheet.create({
   devLabel: { color: MUTED, fontSize: 12, fontWeight: '800', textTransform: 'uppercase' },
   devOtp: { marginTop: 4, color: PRIMARY, fontSize: 30, fontWeight: '900', letterSpacing: 8 },
   otp: { marginTop: 24, marginBottom: 18, width: '100%', minHeight: 68, borderRadius: 18, borderWidth: 1.5, borderColor: '#D6E0EC', color: TEXT, fontSize: 28, fontWeight: '900', letterSpacing: 10, textAlign: 'center', backgroundColor: '#fff' },
+  button: {
+    width: '100%',
+    height: 60,
+    borderRadius: 18,
+    backgroundColor: '#1177F2',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  buttonText: {
+    color: '#FFFFFF',
+    fontSize: 20,
+    fontWeight: '800',
+    textAlign: 'center',
+  },
   loader: { marginTop: 12 },
   resend: { marginTop: 20, color: MUTED, fontSize: 15, textAlign: 'center' },
   link: { color: PRIMARY, fontWeight: '800' },

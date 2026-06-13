@@ -25,9 +25,12 @@ class User extends Authenticatable
         'mobile_number',
         'password',
         'role',
+        'status',
         'otp',
         'otp_expires_at',
         'api_token_hash',
+        'service_city_id',
+        'service_zone_id',
     ];
 
     /**
@@ -74,7 +77,17 @@ class User extends Authenticatable
 
     public function isAdmin(): bool
     {
-        return $this->role === UserRole::ADMIN;
+        return UserRole::isAdminRole($this->role);
+    }
+
+    public function isSuperAdmin(): bool
+    {
+        return UserRole::isSuperAdminRole($this->role);
+    }
+
+    public function isCityAdmin(): bool
+    {
+        return $this->role === UserRole::CITY_ADMIN;
     }
 
     public function isCustomer(): bool
@@ -157,6 +170,16 @@ class User extends Authenticatable
     public function devices()
     {
         return $this->hasMany(\App\Models\UserDevice::class);
+    }
+
+    public function serviceCity()
+    {
+        return $this->belongsTo(\App\Models\ServiceCity::class);
+    }
+
+    public function serviceZone()
+    {
+        return $this->belongsTo(\App\Models\ServiceZone::class);
     }
 
     /**

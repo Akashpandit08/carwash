@@ -17,6 +17,8 @@ class UpdateLocationRequest extends FormRequest
             'heading' => ['nullable', 'numeric'],
             'speed' => ['nullable', 'numeric'],
             'recorded_at' => ['nullable', 'date'],
+            'role' => ['nullable', 'string'],
+            'is_online' => ['nullable', 'boolean'],
         ];
     }
 }

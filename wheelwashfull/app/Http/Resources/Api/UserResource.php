@@ -15,6 +15,11 @@ class UserResource extends JsonResource
             'email' => $this->email,
             'mobile_number' => $this->mobile_number,
             'role' => $this->role,
+            'status' => $this->status,
+            'service_city_id' => $this->service_city_id,
+            'service_city_name' => $this->whenLoaded('serviceCity', fn () => $this->serviceCity?->name),
+            'service_zone_id' => $this->service_zone_id,
+            'service_zone_name' => $this->whenLoaded('serviceZone', fn () => $this->serviceZone?->name),
         ];
     }
 }

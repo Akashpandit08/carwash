@@ -7,6 +7,8 @@ export type UserLocation = {
   pincode: string;
   area?: string;
   fullAddress: string;
+  service_city_id?: number;
+  service_zone_id?: number | null;
 };
 
 export type Vehicle = {
@@ -39,6 +41,8 @@ export const STORAGE_KEYS = {
   reviewId: 'review_id',
   addressId: 'address_id',
   couponId: 'coupon_id',
+  serviceCityId: 'service_city_id',
+  serviceZoneId: 'service_zone_id',
 };
 
 export const defaultVehicle: Vehicle = {
@@ -56,7 +60,16 @@ export const defaultLocation: UserLocation = {
   pincode: '282005',
   area: 'Dayal Bagh',
   fullAddress: 'Home, Dayal Bagh, Agra, Uttar Pradesh - 282005',
+  service_city_id: 2,
+  service_zone_id: null,
 };
+
+export function cityIdsForName(city?: string): { service_city_id?: number; service_zone_id?: number | null } {
+  const normalized = (city || '').trim().toLowerCase();
+  if (normalized.includes('firozabad')) return { service_city_id: 1, service_zone_id: null };
+  if (normalized.includes('agra')) return { service_city_id: 2, service_zone_id: null };
+  return {};
+}
 
 export const serviceCategories = [
   { title: 'Exterior Wash', icon: 'car-sport-outline', tone: '#E8F2FF', color: PRIMARY },

@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import { View, ActivityIndicator, Alert, StyleSheet } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { UserRole } from '../../constants/roles';
+import { ADMIN_ROLES, UserRole } from '../../constants/roles';
 import { registerForPushNotifications } from '../../services/notificationService';
 
 export const RoleRedirectScreen = ({ navigation }: any) => {
@@ -23,10 +23,12 @@ export const RoleRedirectScreen = ({ navigation }: any) => {
           );
         }
         
-        switch (user.role) {
-          case UserRole.ADMIN:
+        if ((ADMIN_ROLES as readonly string[]).includes(user.role)) {
             navigation.replace('Admin');
-            break;
+            return;
+        }
+
+        switch (user.role) {
           case UserRole.PARTNER:
             navigation.replace('Partner');
             break;

@@ -7,34 +7,40 @@ use App\Constants\UserRole;
 use App\Http\Controllers\Controller;
 use App\Models\Booking;
 use App\Models\User;
+use App\Services\CityScopeService;
 
 class ReportController extends Controller
 {
-    public function index()
+    public function index(CityScopeService $cityScope)
     {
         $today = now()->startOfDay();
+        $user = auth()->user();
+        $bookings = Booking::query();
+        $cityScope->apply($bookings, $user);
+        $users = User::query();
+        $cityScope->apply($users, $user);
 
         return response()->json([
             'success' => true,
             'data' => [
                 'bookings' => [
-                    'total' => Booking::count(),
-                    'today' => Booking::where('created_at', '>=', $today)->count(),
-                    'pending' => Booking::where('status', BookingStatus::PENDING)->count(),
-                    'completed' => Booking::where('status', BookingStatus::COMPLETED)->count(),
-                    'cancelled' => Booking::where('status', BookingStatus::CANCELLED)->count(),
+                    'total' => (clone $bookings)->count(),
+                    'today' => (clone $bookings)->where('created_at', '>=', $today)->count(),
+                    'pending' => (clone $bookings)->where('status', BookingStatus::PENDING)->count(),
+                    'completed' => (clone $bookings)->where('status', BookingStatus::COMPLETED)->count(),
+                    'cancelled' => (clone $bookings)->where('status', BookingStatus::CANCELLED)->count(),
                 ],
                 'revenue' => [
-                    'total' => (float) Booking::where('status', BookingStatus::COMPLETED)->sum('total_amount'),
-                    'today' => (float) Booking::where('status', BookingStatus::COMPLETED)->where('updated_at', '>=', $today)->sum('total_amount'),
+                    'total' => (float) (clone $bookings)->where('status', BookingStatus::COMPLETED)->sum('total_amount'),
+                    'today' => (float) (clone $bookings)->where('status', BookingStatus::COMPLETED)->where('updated_at', '>=', $today)->sum('total_amount'),
                 ],
                 'users' => [
-                    'customers' => User::where('role', UserRole::CUSTOMER)->count(),
-                    'partners' => User::where('role', UserRole::PARTNER)->count(),
-                    'workers' => User::where('role', UserRole::WORKER)->count(),
-                    'pickup_drivers' => User::where('role', UserRole::PICKUP_DRIVER)->count(),
+                    'customers' => (clone $users)->where('role', UserRole::CUSTOMER)->count(),
+                    'partners' => (clone $users)->where('role', UserRole::PARTNER)->count(),
+                    'workers' => (clone $users)->where('role', UserRole::WORKER)->count(),
+                    'pickup_drivers' => (clone $users)->where('role', UserRole::PICKUP_DRIVER)->count(),
                 ],
-                'recent_bookings' => Booking::with(['user', 'service'])->latest()->take(5)->get(),
+                'recent_bookings' => (clone $bookings)->with(['user', 'service'])->latest()->take(5)->get(),
             ],
         ]);
     }

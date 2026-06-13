@@ -72,7 +72,7 @@
                 <div class="d-flex justify-content-between align-items-center">
                     <div>
                         <h6 class="mb-0 text-white-50">Total Revenue</h6>
-                        <h2 class="mb-0 fw-bold">₹{{ number_format($stats['total_revenue']) }}</h2>
+                        <h2 class="mb-0 fw-bold">Rs {{ number_format($stats['total_revenue']) }}</h2>
                     </div>
                     <i class="bi bi-currency-rupee fs-1 text-white-50"></i>
                 </div>
@@ -87,7 +87,7 @@
                 <div class="d-flex justify-content-between align-items-center">
                     <div>
                         <h6 class="mb-0 text-muted">COD Amount</h6>
-                        <h2 class="mb-0 fw-bold text-dark">₹{{ number_format($stats['cod_amount']) }}</h2>
+                        <h2 class="mb-0 fw-bold text-dark">Rs {{ number_format($stats['cod_amount']) }}</h2>
                     </div>
                     <i class="bi bi-cash fs-1 text-muted"></i>
                 </div>
@@ -102,7 +102,7 @@
                 <div class="d-flex justify-content-between align-items-center">
                     <div>
                         <h6 class="mb-0 text-muted">Online Paid Amount</h6>
-                        <h2 class="mb-0 fw-bold text-dark">₹{{ number_format($stats['online_paid_amount']) }}</h2>
+                        <h2 class="mb-0 fw-bold text-dark">Rs {{ number_format($stats['online_paid_amount']) }}</h2>
                     </div>
                     <i class="bi bi-credit-card fs-1 text-muted"></i>
                 </div>
@@ -111,7 +111,7 @@
     </div>
 
     <!-- Total Customers -->
-    <div class="col-12 col-md-6 col-lg-6">
+    <div class="col-12 col-md-6 col-lg-3">
         <div class="card border-0 shadow-sm h-100">
             <div class="card-body">
                 <div class="d-flex justify-content-between align-items-center">
@@ -143,7 +143,84 @@
             </div>
         </div>
     </div>
+
+    <div class="col-12 col-md-6 col-lg-3">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="mb-0 text-muted">Workers</h6>
+                        <h2 class="mb-0 fw-bold text-success">{{ number_format($stats['total_workers']) }}</h2>
+                    </div>
+                    <div class="bg-success bg-opacity-10 rounded-circle p-3">
+                        <i class="bi bi-tools text-success fs-3"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-12 col-md-6 col-lg-3">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="mb-0 text-muted">Pickup Drivers</h6>
+                        <h2 class="mb-0 fw-bold text-warning">{{ number_format($stats['total_pickup_drivers']) }}</h2>
+                    </div>
+                    <div class="bg-warning bg-opacity-10 rounded-circle p-3">
+                        <i class="bi bi-truck text-warning fs-3"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @if(auth()->user()->isSuperAdmin())
+    <div class="col-12 col-md-6 col-lg-3">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="mb-0 text-muted">City Admins</h6>
+                        <h2 class="mb-0 fw-bold text-secondary">{{ number_format($stats['total_city_admins']) }}</h2>
+                    </div>
+                    <div class="bg-secondary bg-opacity-10 rounded-circle p-3">
+                        <i class="bi bi-person-gear text-secondary fs-3"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    @endif
 </div>
+
+@if(auth()->user()->isSuperAdmin())
+<div class="card border-0 shadow-sm mb-4">
+    <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+        <h5 class="mb-0 fw-bold">City Wise Overview</h5>
+        <a href="{{ route('admin.city-admins.index', request('service_city_id') ? ['service_city_id' => request('service_city_id')] : []) }}" class="btn btn-sm btn-outline-primary">Create City Admin</a>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead class="table-light">
+                <tr><th class="ps-4">City</th><th>Bookings</th><th>Revenue</th><th>Team</th><th>Action</th></tr>
+            </thead>
+            <tbody>
+                @foreach($cityWise as $row)
+                    <tr>
+                        <td class="ps-4 fw-semibold">{{ $row['city']->name }}</td>
+                        <td>{{ number_format($row['bookings']) }}</td>
+                        <td>Rs {{ number_format($row['revenue'], 2) }}</td>
+                        <td>{{ number_format($row['team']) }}</td>
+                        <td><a class="btn btn-sm btn-outline-secondary" href="{{ route('admin.dashboard', ['service_city_id' => $row['city']->id]) }}">Filter</a></td>
+                    </tr>
+                @endforeach
+            </tbody>
+        </table>
+    </div>
+</div>
+@endif
 
 <!-- Recent Bookings -->
 <div class="card border-0 shadow-sm">

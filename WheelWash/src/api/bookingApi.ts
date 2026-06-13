@@ -53,7 +53,8 @@ export type CreateBookingPayload = {
   address_id?: string | number;
   pickup_address_id?: string | number;
   drop_address_id?: string | number;
-  payment_method: 'cod' | 'online';
+  payment_method: 'cod' | 'online' | 'subscription';
+  customer_subscription_id?: string | number;
 };
 
 export async function listBookings() {
@@ -104,6 +105,8 @@ export async function createBookingFromSelection(input: {
   bookingDate: string;
   bookingTime: string;
   location: UserLocation;
+  paymentMethod?: 'cod' | 'online' | 'subscription';
+  customerSubscriptionId?: string | number;
 }) {
   let addressId = input.location.id || await AsyncStorage.getItem(STORAGE_KEYS.addressId);
 
@@ -129,6 +132,7 @@ export async function createBookingFromSelection(input: {
     address_id: addressId,
     pickup_address_id: input.washType === 'pickup_wash' ? addressId : undefined,
     drop_address_id: input.washType === 'pickup_wash' ? addressId : undefined,
-    payment_method: 'cod',
+    payment_method: input.paymentMethod || 'cod',
+    customer_subscription_id: input.customerSubscriptionId,
   });
 }

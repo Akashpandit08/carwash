@@ -1,47 +1,59 @@
 import React, { useState } from 'react';
-import { ScrollView, StyleSheet, Alert, Platform } from 'react-native';
-import { updateJobStatus, uploadBeforeImages, uploadAfterImages } from '../../api/workerApi';
+import { Alert, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { postWorkerAction, uploadWorkerPhoto } from '../../api/workerApi';
 import { AppButton } from '../../components/AppButton';
-import { ImageUploadBox } from '../../components/ImageUploadBox';
+import { ImageUploadBox, PhotoMap, PhotoSide } from '../../components/ImageUploadBox';
+import { enqueuePhotoUploads } from '../../services/offlineUploadQueue';
+import { getCurrentCoords } from '../../services/locationTracking';
+
+const REQUIRED: PhotoSide[] = ['front', 'back', 'left', 'right'];
 
 export const WorkerExecutionScreen = ({ route, navigation }: any) => {
-  const { job, nextStatus } = route.params;
-  const bookingId = job.id;
-
-  const [images, setImages] = useState<string[]>([]);
+  const { job, action } = route.params;
+  const [photos, setPhotos] = useState<PhotoMap>({});
   const [loading, setLoading] = useState(false);
 
-  const isBefore = nextStatus === 'service_started';
-  const isAfter = nextStatus === 'service_completed' || nextStatus === 'ready_for_delivery';
+  const missing = REQUIRED.filter((side) => !photos[side]);
 
-  const createFormData = (uris: string[], fieldName: string) => {
-    const formData = new FormData();
-    uris.forEach((uri, index) => {
-      formData.append(`${fieldName}[${index}]`, {
-        uri: Platform.OS === 'android' ? uri : uri.replace('file://', ''),
-        type: 'image/jpeg',
-        name: `image_${index}.jpg`,
-      } as any);
-    });
-    return formData;
-  };
+  const handleSubmit = async () => {
+    if (missing.length) {
+      Alert.alert('Photos Required', `Add ${missing.join(', ')} photos before continuing.`);
+      return;
+    }
 
-  const handleUpload = async () => {
-    if (images.length === 0) return Alert.alert('Error', 'Please select images');
     setLoading(true);
     try {
-      if (isBefore) {
-        const data = createFormData(images, 'before_images');
-        await uploadBeforeImages(bookingId, data);
-      } else {
-        const data = createFormData(images, 'after_images');
-        await uploadAfterImages(bookingId, data);
+      const entries = REQUIRED.map((side) => ({ side, uri: photos[side]! }));
+
+      for (const item of entries) {
+        await uploadWorkerPhoto(job.id, action.photoType, item.side, item.uri);
       }
-      await updateJobStatus(bookingId, nextStatus);
-      Alert.alert('Success', `Images uploaded and status updated!`);
+
+      const coords = await getCurrentCoords().catch(() => ({}));
+      await postWorkerAction(action.api, coords);
+      Alert.alert('Success', 'Proof uploaded and job moved to the next step.');
       navigation.goBack();
-    } catch (e: any) {
-      Alert.alert('Error', e.response?.data?.message || 'Failed to update status');
+    } catch (error: any) {
+      if (!error?.response) {
+        await enqueuePhotoUploads(
+          REQUIRED.map((side) => ({
+            id: `${job.id}-${action.key}-${side}-${Date.now()}`,
+            bookingId: Number(job.id),
+            role: 'worker',
+            action: action.key === 'upload_before_start' ? 'start_service' : 'complete_service',
+            api: `/worker/jobs/${job.id}/media`,
+            actionApi: action.api,
+            photoType: action.photoType,
+            side,
+            localUri: photos[side]!,
+            createdAt: new Date().toISOString(),
+            retryCount: 0,
+          }))
+        );
+        Alert.alert('Saved Offline', 'Photos saved offline. They will upload automatically when internet is back.');
+      } else {
+        Alert.alert('Error', error.response?.data?.message || 'Failed to submit proof.');
+      }
     } finally {
       setLoading(false);
     }
@@ -49,16 +61,19 @@ export const WorkerExecutionScreen = ({ route, navigation }: any) => {
 
   return (
     <ScrollView style={styles.container}>
-      <ImageUploadBox 
-        title={isBefore ? "Before Service Images" : "After Service Images"} 
-        images={images} 
-        onImagesChange={setImages} 
-      />
-      <AppButton title={isBefore ? "Start Service" : "Complete Service"} onPress={handleUpload} loading={loading} />
+      <View style={styles.header}>
+        <Text style={styles.title}>{action.label}</Text>
+        <Text style={styles.subtitle}>Booking #{job.booking_number || job.booking_no || job.id}</Text>
+      </View>
+      <ImageUploadBox title="Required Photo Proof" photoMap={photos} onPhotoMapChange={setPhotos} requiredSides={REQUIRED} />
+      <AppButton title={action.label} onPress={handleSubmit} loading={loading} />
     </ScrollView>
   );
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#FFF', padding: 16 },
+  container: { flex: 1, backgroundColor: '#FFFFFF', padding: 16 },
+  header: { marginBottom: 8 },
+  title: { fontSize: 20, fontWeight: '800', color: '#111827' },
+  subtitle: { marginTop: 4, fontSize: 14, color: '#64748B' },
 });

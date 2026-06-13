@@ -17,7 +17,7 @@ export default function PaymentScreen() {
   return (
     <SafeAreaView style={styles.root} edges={['top']}>
       <View style={styles.header}>
-        <TouchableOpacity style={styles.back} onPress={() => router.back()}><Ionicons name="arrow-back" size={26} color={TEXT} /></TouchableOpacity>
+        <TouchableOpacity style={styles.back} onPress={() => router.canGoBack() ? router.back() : router.replace('/')}><Ionicons name="arrow-back" size={26} color={TEXT} /></TouchableOpacity>
         <Text style={styles.headerTitle}>Payment</Text>
         <View style={styles.back} />
       </View>

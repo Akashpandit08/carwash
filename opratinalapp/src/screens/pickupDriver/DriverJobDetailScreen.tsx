@@ -1,126 +1,189 @@
 import React, { useEffect, useState } from 'react';
-import { ScrollView, View, Text, StyleSheet, Alert } from 'react-native';
-import { getDriverJobDetail, updateLocation, updateJobStatus } from '../../api/pickupDriverApi';
+import { Alert, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { getPickupDriverAction } from '../../utils/statusFlow';
+import { destinationForJob, openWhatsApp } from '../../utils/jobContact';
+import { asLatLng, openDirections } from '../../utils/maps';
+import { getDriverJobDetail, postDriverAction } from '../../api/pickupDriverApi';
+import { getCurrentCoords, sendLiveLocation, startLiveTracking, stopLiveTracking } from '../../services/locationTracking';
+import { syncPendingUploads } from '../../services/offlineUploadQueue';
+import { useNetworkStatus } from '../../hooks/useNetworkStatus';
 import { LoadingView } from '../../components/LoadingView';
 import { EmptyState } from '../../components/EmptyState';
 import { StatusBadge } from '../../components/StatusBadge';
 import { AppButton } from '../../components/AppButton';
-import * as Location from 'expo-location';
+import { RouteMap } from '../../components/maps/RouteMap';
+import { MapActionButtons } from '../../components/maps/MapActionButtons';
 
 export const DriverJobDetailScreen = ({ route, navigation }: any) => {
   const { bookingId } = route.params;
+  const isOnline = useNetworkStatus();
   const [job, setJob] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [locLoading, setLocLoading] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+  const [acting, setActing] = useState(false);
+  const [currentLocation, setCurrentLocation] = useState<any>(null);
+  const [isTracking, setIsTracking] = useState(false);
 
   const fetchDetail = async () => {
     try {
       const res = await getDriverJobDetail(bookingId);
       setJob(res.data?.data || res.data);
-    } catch (e) {
-      console.log(e);
+      if (isOnline) syncPendingUploads();
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
   };
 
   useEffect(() => {
-    const unsubscribe = navigation.addListener('focus', () => {
-      fetchDetail();
-    });
+    const unsubscribe = navigation.addListener('focus', fetchDetail);
     return unsubscribe;
-  }, [navigation, bookingId]);
+  }, [navigation, bookingId, isOnline]);
 
-  const handleUpdateLocation = async () => {
-    setLocLoading(true);
-    try {
-      const { status } = await Location.requestForegroundPermissionsAsync();
-      if (status !== 'granted') {
-        Alert.alert('Permission to access location was denied');
-        return;
+  useEffect(() => {
+    if (!job) return;
+    const activeStatuses = [
+      'pickup_driver_assigned', 'pickup_driver_on_the_way',
+      'pickup_started', 'vehicle_picked_up', 'delivery_started'
+    ];
+    
+    if (activeStatuses.includes(job.status)) {
+      setIsTracking(true);
+      startLiveTracking('pickup_driver', () => true, job.id);
+    } else {
+      setIsTracking(false);
+      stopLiveTracking();
+    }
+    
+    return () => {
+      stopLiveTracking();
+    };
+  }, [job?.status, job?.id]);
+
+  if (loading) return <LoadingView message="Loading job..." />;
+  if (!job) return <EmptyState title="Job Not Found" />;
+
+  const action = getPickupDriverAction(job);
+  const customer = job.customer || job.user || {};
+  const phone = customer.mobile_number || customer.phone || job.customer_phone || job.phone;
+  const mapPhase = action?.key === 'arrived_at_partner' ? 'partner' : action?.phase;
+  const destination = destinationForJob(job, mapPhase);
+  const destinationLocation = asLatLng(destination.latitude, destination.longitude);
+  const refreshLocation = async () => {
+    const coords = await getCurrentCoords();
+    setCurrentLocation(coords);
+    await sendLiveLocation('pickup_driver', true, job.id).catch(() => null);
+  };
+
+  const handleAction = async () => {
+    if (!action?.api) return;
+    if (action.requiresPhotos) {
+      navigation.navigate(action.photoType === 'delivery_proof' ? 'DeliveryExecutionScreen' : 'PickupExecutionScreen', { job, action });
+      return;
+    }
+
+    const proceed = async () => {
+      setActing(true);
+      try {
+        let payload: any = {};
+        if (action.requiresGpsCheck || action.key.includes('start')) {
+          payload = await getCurrentCoords();
+          setCurrentLocation(payload);
+        }
+        if (action.requiresCashCollection) {
+          payload = { amount: job.payable_amount || job.total_amount || job.final_price, payment_mode: 'cash', payment_status: 'paid' };
+        }
+        await postDriverAction(action.api as string, payload);
+        await sendLiveLocation('pickup_driver', true, job.id).catch(() => null);
+        Alert.alert('Success', 'Trip updated.');
+        fetchDetail();
+      } catch (error: any) {
+        Alert.alert('Error', error.response?.data?.message || error.message || 'Action failed.');
+      } finally {
+        setActing(false);
       }
+    };
 
-      const location = await Location.getCurrentPositionAsync({});
-      await updateLocation(location.coords.latitude, location.coords.longitude);
-      Alert.alert('Success', 'Live location updated');
-    } catch (e) {
-      Alert.alert('Error', 'Failed to update location');
-    } finally {
-      setLocLoading(false);
+    if (action.requiresCashCollection) {
+      Alert.alert('Confirm Cash', `Have you collected Rs ${job.payable_amount || job.total_amount || job.final_price || 0} cash from customer?`, [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Yes, Complete', onPress: proceed },
+      ]);
+    } else {
+      proceed();
     }
   };
 
-  if (loading) return <LoadingView message="Loading Detail..." />;
-  if (!job) return <EmptyState title="Job Not Found" />;
-
-  const renderActions = () => {
-    const actions = require('../../utils/statusFlow').getDriverActions(job);
-    if (!actions.length) return null;
-
-    return (
-      <View style={{ marginTop: 24 }}>
-        <Text style={styles.sectionTitle}>Task Execution</Text>
-        {actions.map((action: any, index: number) => {
-          const isImageRequired = action.nextStatus === 'car_picked_up' || action.nextStatus === 'delivered';
-          const handlePress = async () => {
-            if (isImageRequired) {
-              if (action.nextStatus === 'car_picked_up') {
-                navigation.navigate('PickupExecutionScreen', { job, nextStatus: action.nextStatus });
-              } else {
-                navigation.navigate('DeliveryExecutionScreen', { job, nextStatus: action.nextStatus });
-              }
-            } else {
-              setLoading(true);
-              try {
-                await updateJobStatus(job.id, action.nextStatus);
-                Alert.alert('Success', `Status updated to ${action.title}`);
-                fetchDetail();
-              } catch (e: any) {
-                Alert.alert('Error', e.response?.data?.message || 'Failed to update status');
-              } finally {
-                setLoading(false);
-              }
-            }
-          };
-
-          return (
-            <AppButton 
-              key={index}
-              title={action.title} 
-              onPress={handlePress} 
-              style={{ marginTop: 12 }}
-            />
-          );
-        })}
-      </View>
-    );
-  };
-
   return (
-    <ScrollView style={styles.container}>
+    <ScrollView
+      style={styles.container}
+      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); fetchDetail(); }} />}
+    >
+      {!isOnline && <Text style={styles.offline}>Offline mode. Failed photo uploads will retry when network returns.</Text>}
+      {isTracking && (
+        <View style={styles.trackingBanner}>
+          <Text style={styles.trackingBannerText}>📍 Live location sharing active</Text>
+        </View>
+      )}
       <View style={styles.card}>
         <View style={styles.row}>
-          <Text style={styles.title}>#{job.booking_no || job.id}</Text>
+          <Text style={styles.title}>#{job.booking_number || job.booking_no || job.id}</Text>
           <StatusBadge status={job.status || 'unknown'} />
         </View>
-        <Text style={styles.label}>Customer: <Text style={styles.value}>{job.customer_name || job.customer?.name || 'N/A'}</Text></Text>
-        <Text style={styles.label}>Phone: <Text style={styles.value}>{job.phone || job.customer?.phone || 'N/A'}</Text></Text>
-        <Text style={styles.label}>Address: <Text style={styles.value}>{job.pickup_address || job.address || 'N/A'}</Text></Text>
-        <Text style={styles.label}>Vehicle: <Text style={styles.value}>{job.vehicle_name || job.vehicle?.name || 'N/A'}</Text></Text>
+        <Text style={styles.line}>Customer: {customer.name || job.customer_name || 'N/A'}</Text>
+        <Text style={styles.line}>Phone: {phone || 'N/A'}</Text>
+        <Text style={styles.line}>Vehicle: {job.vehicle_name || job.vehicle?.name || job.vehicle?.registration_number || 'N/A'}</Text>
+        <Text style={styles.line}>Pickup: {job.pickup_address || job.address || 'N/A'}</Text>
+        <Text style={styles.line}>Washing Center: {job.partner?.name || job.partner_address || 'N/A'}</Text>
+        <Text style={styles.line}>Delivery: {job.drop_address || job.delivery_address || job.address || 'N/A'}</Text>
+        <Text style={styles.line}>Payment: {job.payment_method || 'N/A'} | Rs {job.payable_amount || job.total_amount || job.final_price || 0}</Text>
       </View>
 
-      <AppButton title="Update Live Location" onPress={handleUpdateLocation} loading={locLoading} type="secondary" />
-      {renderActions()}
+      <View style={styles.card}>
+        <Text style={styles.sectionTitle}>Route</Text>
+        <RouteMap currentLocation={currentLocation} destination={destinationLocation ? { ...destinationLocation, title: destination.label } : undefined} />
+        <MapActionButtons latitude={destinationLocation?.latitude} longitude={destinationLocation?.longitude} label={destination.label} phone={phone} onRefresh={refreshLocation} />
+      </View>
+      <AppButton title="WhatsApp Customer" onPress={() => openWhatsApp(phone, `I am assigned to your WheelWash booking #${job.booking_number || job.id}.`)} type="secondary" />
+
+      <View style={styles.card}>
+        <Text style={styles.sectionTitle}>Status Timeline</Text>
+        {(job.status_logs || []).map((log: any) => (
+          <Text key={log.id || `${log.new_status}-${log.created_at}`} style={styles.line}>{log.new_status || log.status} - {log.created_at || ''}</Text>
+        ))}
+        {!job.status_logs?.length && <Text style={styles.muted}>No timeline entries yet.</Text>}
+      </View>
+
+      {action?.api ? (
+        <>
+          {action.key === 'arrived_at_partner' && (
+            <AppButton
+              title="Navigate to Washing Center"
+              onPress={() => destinationLocation && openDirections(destinationLocation.latitude, destinationLocation.longitude, destination.label)}
+              type="secondary"
+            />
+          )}
+          <AppButton title={action.label} onPress={handleAction} loading={acting} style={styles.primary} />
+        </>
+      ) : (
+        <View style={styles.waiting}><Text style={styles.waitingText}>{action?.label || 'No pickup driver action is available for this status.'}</Text></View>
+      )}
     </ScrollView>
   );
 };
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#F5F7FA', padding: 16 },
-  card: { backgroundColor: '#FFF', padding: 16, borderRadius: 8, marginBottom: 16, elevation: 1 },
-  row: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 12 },
-  title: { fontSize: 18, fontWeight: 'bold' },
-  sectionTitle: { fontSize: 16, fontWeight: 'bold', marginBottom: 12, color: '#333' },
-  label: { fontSize: 14, color: '#666', marginBottom: 6 },
-  value: { color: '#000', fontWeight: '500' },
+  card: { backgroundColor: '#FFFFFF', padding: 16, borderRadius: 8, marginBottom: 14, borderWidth: 1, borderColor: '#E5E7EB' },
+  row: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
+  title: { fontSize: 19, fontWeight: '800', color: '#111827' },
+  line: { fontSize: 14, color: '#475569', marginBottom: 6 },
+  muted: { fontSize: 14, color: '#94A3B8' },
+  sectionTitle: { fontSize: 16, fontWeight: '800', marginBottom: 10, color: '#111827' },
+  primary: { marginTop: 8, marginBottom: 32 },
+  offline: { padding: 10, borderRadius: 8, backgroundColor: '#FEF3C7', color: '#92400E', marginBottom: 12 },
+  waiting: { padding: 16, borderRadius: 8, backgroundColor: '#EEF2FF', marginBottom: 30 },
+  waitingText: { color: '#3730A3', fontWeight: '700' },
+  trackingBanner: { backgroundColor: '#10B981', padding: 12, borderRadius: 8, marginBottom: 14, alignItems: 'center' },
+  trackingBannerText: { color: '#FFFFFF', fontWeight: '700', fontSize: 14 },
 });

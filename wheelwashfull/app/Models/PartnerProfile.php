@@ -16,6 +16,7 @@ class PartnerProfile extends Model
         'latitude',
         'longitude',
         'service_area',
+        'service_radius',
         'current_status',
         'commission_type',
         'commission_value',

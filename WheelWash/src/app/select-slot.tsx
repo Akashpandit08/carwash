@@ -33,8 +33,12 @@ export default function SelectSlotScreen() {
   const [slotsLoading, setSlotsLoading] = useState(false);
   const [slotsError, setSlotsError] = useState<string | null>(null);
   const { selectedVehicle } = useVehicleStore();
-  const { selectedService } = useServiceStore();
+  const { selectedService, loadServices } = useServiceStore();
   const { location } = useLocationStore();
+
+  useEffect(() => {
+    loadServices();
+  }, [loadServices]);
 
   useEffect(() => {
     let isActive = true;
@@ -59,8 +63,9 @@ export default function SelectSlotScreen() {
         });
         if (!isActive) return;
 
-        const available = result.filter((slot) => slot.available);
-        setSlots(result);
+        const uniqueResult = result.filter((slot, index, self) => index === self.findIndex(s => s.time === slot.time));
+        const available = uniqueResult.filter((slot) => slot.available);
+        setSlots(uniqueResult);
         setBookingTime((current) => available.some((slot) => slot.time === current) ? current : available[0]?.time || '');
       } catch (err) {
         if (!isActive) return;
@@ -117,7 +122,7 @@ export default function SelectSlotScreen() {
   return (
     <SafeAreaView style={styles.root} edges={['top']}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.back}><Ionicons name="arrow-back" size={26} color={TEXT} /></TouchableOpacity>
+        <TouchableOpacity onPress={() => router.canGoBack() ? router.back() : router.replace('/')} style={styles.back}><Ionicons name="arrow-back" size={26} color={TEXT} /></TouchableOpacity>
         <Text style={styles.headerTitle}>Select Wash & Slot</Text>
         <View style={styles.back} />
       </View>
@@ -136,18 +141,23 @@ export default function SelectSlotScreen() {
 
         <Text style={styles.blueTitle}>Selected Service</Text>
         {selectedService ? (
-          <Card style={styles.service}>
-            {selectedService.image_url || selectedService.image ? (
-              <Image source={{ uri: selectedService.image_url || selectedService.image }} style={styles.serviceImage} />
-            ) : (
-              <View style={[styles.serviceImage, styles.serviceImageEmpty]}><Ionicons name="image-outline" size={30} color="#586274" /></View>
-            )}
-            <View style={{ flex: 1 }}>
-              <Text style={styles.badge}>Selected</Text>
-              <Text style={styles.serviceName}>{selectedService.name || selectedService.title || 'Service'}</Text>
-              <Text style={styles.vehicleSub}>{selectedService.short_description || selectedService.description || 'Professional service.'}</Text>
+          <Card style={styles.serviceCard}>
+            <View style={styles.serviceTop}>
+              {selectedService.image_url || selectedService.image ? (
+                <Image source={{ uri: selectedService.image_url || selectedService.image }} style={styles.serviceImage} />
+              ) : (
+                <View style={[styles.serviceImage, styles.serviceImageEmpty]}><Ionicons name="image-outline" size={30} color="#586274" /></View>
+              )}
+              <View style={styles.serviceInfo}>
+                <Text style={styles.badge}>Selected</Text>
+                <Text style={styles.serviceName} numberOfLines={2}>{selectedService.name || selectedService.title || 'Service'}</Text>
+                <Text style={styles.vehicleSub} numberOfLines={2}>{selectedService.short_description || selectedService.description || 'Professional service.'}</Text>
+              </View>
             </View>
-            <View style={styles.priceBlock}><Text style={styles.price}>Rs {selectedService.price || 0}</Text><Text style={styles.duration}>{selectedService.duration_minutes || selectedService.duration || 45} min</Text></View>
+            <View style={styles.serviceBottom}>
+              <Text style={styles.duration}>{selectedService.duration_minutes || selectedService.duration || 45} min</Text>
+              <Text style={styles.price}>Rs {selectedService.price || 0}</Text>
+            </View>
           </Card>
         ) : <Empty title="No service selected" />}
 
@@ -231,12 +241,14 @@ const styles = StyleSheet.create({
   vehicleThumb: { width: 110, height: 80, borderRadius: 14, backgroundColor: '#E8F3FF', alignItems: 'center', justifyContent: 'center' },
   vehicleName: { color: TEXT, fontSize: 23, fontWeight: '900' },
   vehicleSub: { color: '#586274', fontSize: 16, lineHeight: 24, marginTop: 5 },
-  service: { padding: 16, flexDirection: 'row', gap: 16 },
+  serviceCard: { padding: 16, gap: 16 },
+  serviceTop: { flexDirection: 'row', gap: 16 },
+  serviceInfo: { flex: 1 },
+  serviceBottom: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', borderTopWidth: 1, borderTopColor: '#EEF2F7', paddingTop: 16 },
   serviceImage: { width: 112, height: 112, borderRadius: 12 },
   serviceImageEmpty: { alignItems: 'center', justifyContent: 'center', backgroundColor: '#EEF4FA' },
   badge: { alignSelf: 'flex-start', backgroundColor: PRIMARY, color: '#fff', paddingHorizontal: 10, paddingVertical: 6, borderRadius: 7, fontWeight: '900' },
   serviceName: { color: TEXT, fontSize: 22, fontWeight: '900', marginTop: 10 },
-  priceBlock: { alignItems: 'flex-end', justifyContent: 'space-between' },
   price: { color: PRIMARY, fontSize: 25, fontWeight: '900' },
   duration: { color: '#586274', fontSize: 16, fontWeight: '700' },
   sectionTitle: { color: TEXT, fontSize: 21, fontWeight: '900', marginTop: 4 },

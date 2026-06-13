@@ -90,13 +90,13 @@ export const NotificationsScreen = ({ navigation }: any) => {
     switch (screen) {
       case 'worker_job_detail':
         navigation.navigate('Worker', {
-          screen: 'WorkerJobDetail',
+          screen: 'WorkerJobDetailScreen',
           params: { bookingId },
         });
         break;
       case 'driver_job_detail':
         navigation.navigate('PickupDriver', {
-          screen: 'DriverJobDetail',
+          screen: 'PickupDriverJobDetailScreen',
           params: { bookingId },
         });
         break;

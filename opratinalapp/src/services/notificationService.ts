@@ -28,8 +28,8 @@ export async function registerForPushNotifications(
   userId: number | string,
   role: string
 ): Promise<string | null> {
-  if (!Device.isDevice) {
-    console.log('Push notifications require a physical device');
+  if (!Device.isDevice || Platform.OS === 'web') {
+    console.log('Push notifications require a physical device and are not currently configured for web');
     return null;
   }
 

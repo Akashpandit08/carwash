@@ -17,6 +17,7 @@ class DatabaseSeeder extends Seeder
     {
         // Seed test users with different roles
         $this->call([
+            ServiceCityZoneSeeder::class,
             AdminUserSeeder::class,
             CustomerUserSeeder::class,
             PartnerUserSeeder::class,
@@ -24,11 +25,13 @@ class DatabaseSeeder extends Seeder
             PickupDriverUserSeeder::class,
             UserSeeder::class,
             ServiceSeeder::class,
+            SubscriptionPlanSeeder::class,
             FinalArchitectureServiceSeeder::class,
             CouponSeeder::class,
             SlotSeeder::class,
             AppContentImageSeeder::class,
             DynamicAppContentSeeder::class,
+            OperationsQaSeeder::class,
         ]);
     }
 }

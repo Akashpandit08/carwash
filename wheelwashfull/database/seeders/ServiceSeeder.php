@@ -4,6 +4,7 @@ namespace Database\Seeders;
 
 use App\Models\Service;
 use App\Models\ServiceCategory;
+use App\Models\ServiceCity;
 use Illuminate\Database\Seeder;
 
 class ServiceSeeder extends Seeder
@@ -120,6 +121,51 @@ class ServiceSeeder extends Seeder
                 'image' => $image,
                 'is_active' => true,
             ]);
+        }
+
+        $cityCategory = ServiceCategory::firstOrCreate(
+            ['name' => 'Monthly Wash Services'],
+            ['description' => 'City-wise customer wash services', 'icon' => 'sparkles', 'is_active' => true]
+        );
+
+        $cityServices = [
+            'firozabad' => [
+                ['Basic Exterior Wash', 149, 30],
+                ['Interior + Exterior Wash', 299, 60],
+                ['Foam Wash', 499, 60],
+            ],
+            'agra' => [
+                ['Basic Exterior Wash', 199, 30],
+                ['Interior + Exterior Wash', 399, 60],
+                ['Foam Wash', 699, 60],
+            ],
+        ];
+
+        foreach ($cityServices as $citySlug => $services) {
+            $city = ServiceCity::where('slug', $citySlug)->first();
+            if (! $city) {
+                continue;
+            }
+
+            foreach ($services as [$name, $price, $duration]) {
+                Service::updateOrCreate(
+                    ['name' => $name, 'service_city_id' => $city->id],
+                    [
+                        'category_id' => $cityCategory->id,
+                        'service_city_id' => $city->id,
+                        'service_zone_id' => null,
+                        'service_area' => $city->name,
+                        'is_global' => false,
+                        'description' => "{$name} for {$city->name}.",
+                        'price' => $price,
+                        'duration_minutes' => $duration,
+                        'vehicle_types' => ['car', 'suv'],
+                        'is_active' => true,
+                        'status' => 'active',
+                        'sort_order' => $duration,
+                    ]
+                );
+            }
         }
 
         $this->command->info('Services seeded successfully!');

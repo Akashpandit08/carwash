@@ -11,8 +11,11 @@ class Slot extends Model
 
     protected $fillable = [
         'date',
+        'service_city_id',
+        'service_zone_id',
         'start_time',
         'end_time',
+        'wash_type',
         'max_bookings',
         'is_active',
     ];
@@ -21,4 +24,14 @@ class Slot extends Model
         'date' => 'date',
         'is_active' => 'boolean',
     ];
+
+    public function serviceCity()
+    {
+        return $this->belongsTo(ServiceCity::class);
+    }
+
+    public function serviceZone()
+    {
+        return $this->belongsTo(ServiceZone::class);
+    }
 }

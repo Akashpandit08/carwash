@@ -12,6 +12,8 @@ class AppBanner extends Model
 
     protected $fillable = [
         'title',
+        'service_city_id',
+        'service_zone_id',
         'subtitle',
         'image',
         'position',
@@ -28,6 +30,16 @@ class AppBanner extends Model
     ];
 
     protected $appends = ['image_url'];
+
+    public function serviceCity()
+    {
+        return $this->belongsTo(ServiceCity::class);
+    }
+
+    public function serviceZone()
+    {
+        return $this->belongsTo(ServiceZone::class);
+    }
 
     public function getImageUrlAttribute(): ?string
     {

@@ -12,8 +12,13 @@ class Booking extends Model
     protected $fillable = [
         'booking_number',
         'user_id',
+        'customer_subscription_id',
+        'booking_source',
+        'subscription_wash_type',
         'vehicle_id',
         'service_id',
+        'service_city_id',
+        'service_zone_id',
         'service_mode',
         'wash_type',
         'booking_date',
@@ -25,6 +30,7 @@ class Booking extends Model
         'discount',
         'final_price',
         'total_amount',
+        'payable_amount',
         'coupon_id',
         'payment_method',
         'payment_status',
@@ -48,6 +54,7 @@ class Booking extends Model
         'discount' => 'decimal:2',
         'final_price' => 'decimal:2',
         'total_amount' => 'decimal:2',
+        'payable_amount' => 'decimal:2',
         'latitude' => 'decimal:8',
         'longitude' => 'decimal:8',
     ];
@@ -75,6 +82,21 @@ class Booking extends Model
     public function partner()
     {
         return $this->belongsTo(User::class, 'partner_id');
+    }
+
+    public function customerSubscription()
+    {
+        return $this->belongsTo(CustomerSubscription::class);
+    }
+
+    public function serviceCity()
+    {
+        return $this->belongsTo(ServiceCity::class);
+    }
+
+    public function serviceZone()
+    {
+        return $this->belongsTo(ServiceZone::class);
     }
 
     public function worker()

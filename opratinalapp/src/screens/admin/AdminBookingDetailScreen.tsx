@@ -46,6 +46,18 @@ export const AdminBookingDetailScreen = ({ route, navigation }: any) => {
       </View>
 
       <View style={styles.card}>
+        <Text style={styles.sectionTitle}>Payment Details</Text>
+        <Text style={styles.label}>Method: <Text style={styles.value}>{booking.payment_method?.toUpperCase() || 'N/A'}</Text></Text>
+        <Text style={styles.label}>Total Amount: <Text style={styles.value}>Rs {booking.total_amount || 0}</Text></Text>
+        <Text style={styles.label}>Payable Amount: <Text style={styles.value}>Rs {booking.payable_amount ?? booking.total_amount ?? 0}</Text></Text>
+        {booking.is_subscription_booking && (
+          <Text style={[styles.label, { color: '#0052CC', fontWeight: 'bold' }]}>
+            ✨ Subscription Wash Applied
+          </Text>
+        )}
+      </View>
+
+      <View style={styles.card}>
         <Text style={styles.sectionTitle}>Assignments</Text>
         <Text style={styles.label}>Pickup Driver: <Text style={styles.value}>{booking.pickup_driver?.name || 'Unassigned'}</Text></Text>
         <Text style={styles.label}>Partner: <Text style={styles.value}>{booking.partner?.name || 'Unassigned'}</Text></Text>

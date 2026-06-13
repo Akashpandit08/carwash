@@ -4,7 +4,7 @@ import { router } from 'expo-router';
 import { useState } from 'react';
 import { ActivityIndicator, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { MUTED, PRIMARY, TEXT } from '@/lib/wheelwash-data';
+import { cityIdsForName, MUTED, PRIMARY, TEXT } from '@/lib/wheelwash-data';
 import { Logo, PrimaryButton } from '@/components/wheelwash/ui';
 import { useLocationStore } from '@/store/locationStore';
 
@@ -23,20 +23,56 @@ export default function LocationPermissionScreen() {
       }
 
       const location = await Location.getCurrentPositionAsync({});
-      const reverse = await Location.reverseGeocodeAsync({
-        latitude: location.coords.latitude,
-        longitude: location.coords.longitude,
-      });
+      let address = {};
+      try {
+        const reverse = await Location.reverseGeocodeAsync({
+          latitude: location.coords.latitude,
+          longitude: location.coords.longitude,
+        });
+        if (reverse && reverse.length > 0) {
+          address = reverse[0];
+        }
+      } catch (e) {
+        // Native geocoding failed, will use fallback
+      }
 
-      const address = reverse[0] || {};
+      let city = address.city || address.subregion || address.district;
+      let region = address.region || address.street;
+      let pincode = address.postalCode;
+      let name = address.name;
+      let street = address.street;
+
+      if (!city || city === 'Unknown City') {
+        try {
+          const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${location.coords.latitude}&lon=${location.coords.longitude}`, {
+            headers: { 'User-Agent': 'WheelWashApp/1.0' }
+          });
+          const data = await response.json();
+          if (data && data.address) {
+            city = data.address.city || data.address.state_district || data.address.county || city;
+            region = data.address.state || region;
+            pincode = data.address.postcode || pincode;
+            name = data.address.suburb || data.address.neighbourhood || data.name || name;
+            street = data.address.road || street;
+          }
+        } catch (e) {
+          // Fallback failed
+        }
+      }
+
+      city = city || 'Unknown City';
+      region = region || 'Unknown Region';
+      pincode = pincode || '000000';
+      const fullAddress = [name, street, city, region, pincode].filter(Boolean).join(', ') || 'Current Location';
 
       const userLocation = {
         latitude: location.coords.latitude,
         longitude: location.coords.longitude,
-        city: address.city || address.subregion || '',
-        region: address.region || '',
-        pincode: address.postalCode || '',
-        fullAddress: `${address.name || ''}, ${address.city || ''}, ${address.region || ''}`,
+        city,
+        region,
+        pincode,
+        fullAddress,
+        ...cityIdsForName(city),
       };
 
       await saveLocation(userLocation);

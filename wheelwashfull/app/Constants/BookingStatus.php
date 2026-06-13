@@ -11,12 +11,15 @@ final class BookingStatus
     public const PICKUP_DRIVER_ASSIGNED = 'pickup_driver_assigned';
     public const DRIVER_ON_THE_WAY = 'driver_on_the_way';
     public const WORKER_ON_THE_WAY = 'worker_on_the_way';
+    public const REACHED_LOCATION = 'reached_location';
     public const CAR_PICKED_UP = 'car_picked_up';
     public const REACHED_PARTNER = 'reached_partner';
     public const SERVICE_STARTED = 'service_started';
     public const SERVICE_COMPLETED = 'service_completed';
     public const OUT_FOR_DELIVERY = 'out_for_delivery';
+    public const REACHED_DELIVERY_LOCATION = 'reached_delivery_location';
     public const DELIVERED = 'delivered';
+    public const CASH_COLLECTED = 'cash_collected';
     public const COMPLETED = 'completed';
     public const CANCELLED = 'cancelled';
 
@@ -28,12 +31,15 @@ final class BookingStatus
         self::PICKUP_DRIVER_ASSIGNED,
         self::DRIVER_ON_THE_WAY,
         self::WORKER_ON_THE_WAY,
+        self::REACHED_LOCATION,
         self::CAR_PICKED_UP,
         self::REACHED_PARTNER,
         self::SERVICE_STARTED,
         self::SERVICE_COMPLETED,
         self::OUT_FOR_DELIVERY,
+        self::REACHED_DELIVERY_LOCATION,
         self::DELIVERED,
+        self::CASH_COLLECTED,
         self::COMPLETED,
         self::CANCELLED,
     ];

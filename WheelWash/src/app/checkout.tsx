@@ -12,6 +12,7 @@ import { useBookingStore } from '@/store/bookingStore';
 import { useLocationStore } from '@/store/locationStore';
 import { useServiceStore } from '@/store/serviceStore';
 import { useVehicleStore } from '@/store/vehicleStore';
+import { listMySubscriptions, CustomerSubscriptionDto } from '@/api/subscriptionApi';
 
 function todayString() {
   return new Date().toISOString().slice(0, 10);
@@ -25,6 +26,8 @@ export default function CheckoutScreen() {
   const [bookingDate, setBookingDate] = useState(todayString());
   const [bookingTime, setBookingTime] = useState('10:00');
   const [washType, setWashType] = useState<WashType>('door_to_door');
+  const [subscriptions, setSubscriptions] = useState<CustomerSubscriptionDto[]>([]);
+  const [selectedSubscription, setSelectedSubscription] = useState<CustomerSubscriptionDto | null>(null);
 
   useFocusEffect(useCallback(() => {
     AsyncStorage.multiGet(['booking_date', 'booking_time', 'wash_type']).then((values) => {
@@ -33,6 +36,11 @@ export default function CheckoutScreen() {
       setBookingTime(map.booking_time || '10:00');
       setWashType((map.wash_type as WashType) || 'door_to_door');
     });
+
+    listMySubscriptions().then(subs => {
+      const active = subs.filter(s => s.status === 'active' && s.remaining_washes && s.remaining_washes > 0);
+      setSubscriptions(active);
+    }).catch(() => {});
   }, []));
 
   const book = async () => {
@@ -48,6 +56,8 @@ export default function CheckoutScreen() {
         bookingDate,
         bookingTime,
         location,
+        paymentMethod: selectedSubscription ? 'subscription' : 'cod',
+        customerSubscriptionId: selectedSubscription?.id,
       });
       router.replace({ pathname: '/success', params: { id: String(booking.id) } });
     } catch (err) {
@@ -58,42 +68,64 @@ export default function CheckoutScreen() {
   return (
     <SafeAreaView style={styles.root} edges={['top']}>
       <View style={styles.header}>
-        <TouchableOpacity style={styles.back} onPress={() => router.back()}><Ionicons name="arrow-back" size={26} color={TEXT} /></TouchableOpacity>
+        <TouchableOpacity style={styles.back} onPress={() => router.canGoBack() ? router.back() : router.replace('/')}><Ionicons name="arrow-back" size={26} color={TEXT} /></TouchableOpacity>
         <Text style={styles.headerTitle}>Booking Summary</Text>
         <View style={styles.back} />
       </View>
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
         {error && <Text style={styles.errorText}>{error}</Text>}
-        <Card style={styles.serviceCard}>
-          {selectedService?.image_url || selectedService?.image ? (
-            <Image source={{ uri: selectedService.image_url || selectedService.image }} style={styles.serviceImage} />
-          ) : (
-            <View style={[styles.serviceImage, styles.serviceImageEmpty]}><Ionicons name="image-outline" size={32} color={MUTED} /></View>
-          )}
-          <View style={{ flex: 1 }}>
-            <Text style={styles.title}>{selectedService?.name || selectedService?.title || 'Selected Service'}</Text>
-            <Text style={styles.sub}>{selectedService?.short_description || selectedService?.description || 'Professional car wash service.'}</Text>
+        <Card style={[styles.serviceCard, { flexDirection: 'column', gap: 12 }]}>
+          <View style={{ flexDirection: 'row', gap: 16 }}>
+            {selectedService?.image_url || selectedService?.image ? (
+              <Image source={{ uri: selectedService.image_url || selectedService.image }} style={styles.serviceImage} />
+            ) : (
+              <View style={[styles.serviceImage, styles.serviceImageEmpty]}><Ionicons name="image-outline" size={32} color={MUTED} /></View>
+            )}
+            <View style={{ flex: 1 }}>
+              <Text style={styles.title}>{selectedService?.name || selectedService?.title || 'Selected Service'}</Text>
+              <Text style={styles.sub}>{selectedService?.short_description || selectedService?.description || 'Professional car wash service.'}</Text>
+            </View>
           </View>
-          <Text style={styles.price}>Rs {selectedService?.price || 0}</Text>
+          <View style={{ borderTopWidth: 1, borderTopColor: '#EEF2F7', paddingTop: 12, alignItems: 'flex-end' }}>
+            <Text style={styles.price}>Rs {selectedService?.price || 0}</Text>
+          </View>
         </Card>
         <InfoCard icon="calendar-outline" label="Date & Time" title={bookingDate} sub={bookingTime} />
         <InfoCard icon="car-outline" label="Wash Type" title={washType === 'pickup_wash' ? 'Pickup Wash' : 'Door to Door'} sub="COD payment selected" />
-        <Card style={styles.vehicle}>
-          <View style={styles.vehicleThumb}><Ionicons name="car-sport" size={30} color={PRIMARY} /></View>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.blue}>Your Vehicle</Text>
-            <Text style={styles.titleSmall}>{selectedVehicle ? `${selectedVehicle.brand} ${selectedVehicle.model} - ${selectedVehicle.registrationNumber}` : 'No vehicle selected'}</Text>
-          </View>
-          {selectedVehicle && <SelectedBadge />}
-        </Card>
+        <InfoCard 
+          icon="car-sport" 
+          label="Your Vehicle" 
+          title={selectedVehicle ? `${selectedVehicle.brand} ${selectedVehicle.model}` : 'No vehicle selected'} 
+          sub={selectedVehicle ? selectedVehicle.registrationNumber : 'Please select a vehicle'} 
+        />
         <InfoCard icon="location-outline" label="Service Address" title={location?.city || 'No location'} sub={location?.fullAddress || 'Save location before booking'} />
+        
+        {subscriptions.length > 0 && (
+          <View style={{ gap: 12 }}>
+            <Text style={{ color: TEXT, fontSize: 18, fontWeight: '900', paddingHorizontal: 4 }}>Apply Subscription</Text>
+            {subscriptions.map(sub => (
+              <TouchableOpacity key={sub.id} onPress={() => setSelectedSubscription(sub.id === selectedSubscription?.id ? null : sub)} activeOpacity={0.7}>
+                <Card style={[styles.infoCard, { borderColor: sub.id === selectedSubscription?.id ? PRIMARY : 'transparent', borderWidth: 2 }]}>
+                  <View style={styles.infoIcon}><Ionicons name="card-outline" size={32} color={PRIMARY} /></View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.blue}>{sub.subscription_plan?.name}</Text>
+                    <Text style={styles.titleSmall}>{sub.remaining_washes} Washes Remaining</Text>
+                  </View>
+                  {sub.id === selectedSubscription?.id && <Ionicons name="checkmark-circle" size={28} color={PRIMARY} />}
+                </Card>
+              </TouchableOpacity>
+            ))}
+          </View>
+        )}
+
         <Card style={styles.bill}>
           <Line label="Service Price" value={`Rs ${selectedService?.price || 0}`} />
-          <Line label="Payment Method" value="COD" />
+          {selectedSubscription && <Line label="Subscription Applied" value={`- Rs ${selectedService?.price || 0}`} />}
+          <Line label="Payment Method" value={selectedSubscription ? "Subscription" : "COD"} />
           <View style={styles.billDivider} />
-          <Line label="Total Amount" value={`Rs ${selectedService?.price || 0}`} total />
+          <Line label="Total Amount" value={`Rs ${selectedSubscription ? 0 : (selectedService?.price || 0)}`} total />
         </Card>
-        <PrimaryButton title={loading ? 'Creating Booking...' : 'Create COD Booking'} onPress={book} />
+        <PrimaryButton title={loading ? 'Creating Booking...' : (selectedSubscription ? 'Book with Subscription' : 'Create COD Booking')} onPress={book} />
         {loading && <ActivityIndicator color={PRIMARY} />}
       </ScrollView>
     </SafeAreaView>

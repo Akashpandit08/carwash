@@ -1,39 +1,48 @@
 import React, { useState } from 'react';
-import { ScrollView, StyleSheet, Alert, Platform } from 'react-native';
-import { updateJobStatus, uploadPickupImages } from '../../api/pickupDriverApi';
+import { Alert, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { postDriverAction, uploadDriverPhoto } from '../../api/pickupDriverApi';
 import { AppButton } from '../../components/AppButton';
-import { ImageUploadBox } from '../../components/ImageUploadBox';
+import { ImageUploadBox, PhotoMap, PhotoSide } from '../../components/ImageUploadBox';
+import { enqueuePhotoUploads } from '../../services/offlineUploadQueue';
+
+const REQUIRED: PhotoSide[] = ['front', 'back', 'left', 'right'];
 
 export const PickupExecutionScreen = ({ route, navigation }: any) => {
-  const { job, nextStatus } = route.params;
-  const bookingId = job.id;
-
-  const [images, setImages] = useState<string[]>([]);
+  const { job, action } = route.params;
+  const [photos, setPhotos] = useState<PhotoMap>({});
   const [loading, setLoading] = useState(false);
-
-  const createFormData = (uris: string[], fieldName: string) => {
-    const formData = new FormData();
-    uris.forEach((uri, index) => {
-      formData.append(`${fieldName}[${index}]`, {
-        uri: Platform.OS === 'android' ? uri : uri.replace('file://', ''),
-        type: 'image/jpeg',
-        name: `pickup_${index}.jpg`,
-      } as any);
-    });
-    return formData;
-  };
+  const missing = REQUIRED.filter((side) => !photos[side]);
 
   const handlePickup = async () => {
-    if (images.length === 0) return Alert.alert('Error', 'Please upload vehicle images at pickup');
+    if (missing.length) return Alert.alert('Photos Required', `Add ${missing.join(', ')} photos before continuing.`);
+
     setLoading(true);
     try {
-      const data = createFormData(images, 'pickup_images');
-      await uploadPickupImages(bookingId, data);
-      await updateJobStatus(bookingId, nextStatus || 'car_picked_up');
-      Alert.alert('Success', 'Vehicle picked up and images uploaded!');
+      for (const side of REQUIRED) {
+        await uploadDriverPhoto(job.id, action.photoType, side, photos[side]!);
+      }
+      await postDriverAction(action.api, { notes: 'Vehicle picked up with key' });
+      Alert.alert('Success', 'Pickup proof submitted.');
       navigation.goBack();
-    } catch (e: any) {
-      Alert.alert('Error', e.response?.data?.message || 'Failed to submit pickup details');
+    } catch (error: any) {
+      if (!error?.response) {
+        await enqueuePhotoUploads(REQUIRED.map((side) => ({
+          id: `${job.id}-${action.key}-${side}-${Date.now()}`,
+          bookingId: Number(job.id),
+          role: 'pickup_driver',
+          action: 'pickup_vehicle',
+          api: `/pickup-driver/jobs/${job.id}/media`,
+          actionApi: action.api,
+          photoType: action.photoType,
+          side,
+          localUri: photos[side]!,
+          createdAt: new Date().toISOString(),
+          retryCount: 0,
+        })));
+        Alert.alert('Saved Offline', 'Photos saved offline. They will upload automatically when internet is back.');
+      } else {
+        Alert.alert('Error', error.response?.data?.message || 'Failed to submit pickup proof.');
+      }
     } finally {
       setLoading(false);
     }
@@ -41,16 +50,19 @@ export const PickupExecutionScreen = ({ route, navigation }: any) => {
 
   return (
     <ScrollView style={styles.container}>
-      <ImageUploadBox 
-        title="Upload Vehicle condition images before driving" 
-        images={images} 
-        onImagesChange={setImages} 
-      />
-      <AppButton title="Confirm Pickup" onPress={handlePickup} loading={loading} />
+      <View style={styles.header}>
+        <Text style={styles.title}>{action.label}</Text>
+        <Text style={styles.subtitle}>Booking #{job.booking_number || job.booking_no || job.id}</Text>
+      </View>
+      <ImageUploadBox title="Vehicle Condition Proof" photoMap={photos} onPhotoMapChange={setPhotos} requiredSides={REQUIRED} />
+      <AppButton title={action.label} onPress={handlePickup} loading={loading} />
     </ScrollView>
   );
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#FFF', padding: 16 },
+  container: { flex: 1, backgroundColor: '#FFFFFF', padding: 16 },
+  header: { marginBottom: 8 },
+  title: { fontSize: 20, fontWeight: '800', color: '#111827' },
+  subtitle: { marginTop: 4, fontSize: 14, color: '#64748B' },
 });

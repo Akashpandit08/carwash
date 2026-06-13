@@ -1,5 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { defaultVehicle, STORAGE_KEYS, UserLocation, Vehicle } from './wheelwash-data';
+import { cityIdsForName, defaultVehicle, STORAGE_KEYS, UserLocation, Vehicle } from './wheelwash-data';
 export async function saveUser(user: unknown) {
   await AsyncStorage.setItem(STORAGE_KEYS.user, JSON.stringify(user));
 }
@@ -10,7 +10,14 @@ export async function getLocation(): Promise<UserLocation | null> {
 }
 
 export async function saveLocation(location: UserLocation) {
-  await AsyncStorage.setItem(STORAGE_KEYS.location, JSON.stringify(location));
+  const withCityIds = { ...location, ...cityIdsForName(location.city), service_zone_id: location.service_zone_id ?? null };
+  await AsyncStorage.setItem(STORAGE_KEYS.location, JSON.stringify(withCityIds));
+  if (withCityIds.service_city_id) {
+    await AsyncStorage.setItem(STORAGE_KEYS.serviceCityId, String(withCityIds.service_city_id));
+  }
+  if (withCityIds.service_zone_id) {
+    await AsyncStorage.setItem(STORAGE_KEYS.serviceZoneId, String(withCityIds.service_zone_id));
+  }
 }
 
 export async function getSelectedVehicle(): Promise<Vehicle | null> {

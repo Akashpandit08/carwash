@@ -16,7 +16,9 @@ export const PartnerNavigator = () => {
       <Stack.Screen name="PartnerJobsScreen" component={PartnerJobsScreen} options={{ title: 'My Jobs' }} />
       <Stack.Screen name="PartnerJobDetailScreen" component={PartnerJobDetailScreen} options={{ title: 'Job Detail' }} />
       <Stack.Screen name="PartnerWorkersScreen" component={PartnerWorkersScreen} options={{ title: 'My Workers' }} />
-      <Stack.Screen name="PartnerEarningsScreen" component={PartnerEarningsScreen} options={{ title: 'Earnings' }} />
+      <Stack.Screen name="PartnerDriversScreen" component={require('../screens/partner/PartnerDriversScreen').PartnerDriversScreen} options={{ title: 'My Drivers' }} />
+      <Stack.Screen name="PartnerEarningsScreen" component={require('../screens/partner/PartnerEarningsScreen').PartnerEarningsScreen} options={{ title: 'Earnings' }} />
+      <Stack.Screen name="PartnerProfileScreen" component={require('../screens/partner/PartnerProfileScreen').PartnerProfileScreen} options={{ title: 'Profile' }} />
       <Stack.Screen name="NotificationsScreen" component={NotificationsScreen} options={{ title: 'Notifications', headerShown: false }} />
     </Stack.Navigator>
   );

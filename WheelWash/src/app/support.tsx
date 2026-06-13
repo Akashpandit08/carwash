@@ -29,7 +29,7 @@ export default function SupportScreen() {
       {/* ── Top Bar ── */}
       <SafeAreaView edges={['top']} style={{ backgroundColor: Brand.white }}>
         <View style={styles.topBar}>
-          <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
+          <TouchableOpacity onPress={() => router.canGoBack() ? router.back() : router.replace('/')} style={styles.backBtn}>
             <Text style={styles.backIcon}>←</Text>
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Help & Support</Text>

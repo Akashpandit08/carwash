@@ -15,22 +15,26 @@ use App\Http\Resources\Api\TrackingResource;
 use App\Models\Booking;
 use App\Services\AssignmentService;
 use App\Services\BookingStateService;
+use App\Services\CityScopeService;
 use App\Services\LocationTrackingService;
 use InvalidArgumentException;
 
 class BookingController extends Controller
 {
-    public function index()
+    public function index(CityScopeService $cityScope)
     {
-        $bookings = Booking::with(['user', 'service', 'vehicle', 'partner', 'worker', 'pickupDriver', 'deliveryDriver'])
-            ->latest()
-            ->paginate(request('per_page', 15));
+        $query = Booking::with(['user', 'service', 'vehicle', 'partner', 'worker', 'pickupDriver', 'deliveryDriver']);
+        $cityScope->apply($query, auth()->user());
+
+        $bookings = $query->latest()->paginate(request('per_page', 15));
 
         return BookingResource::collection($bookings)->additional(['success' => true]);
     }
 
-    public function show(Booking $booking)
+    public function show(Booking $booking, CityScopeService $cityScope)
     {
+        $cityScope->ensureCanAccessModel(auth()->user(), $booking);
+
         return response()->json([
             'success' => true,
             'data' => new BookingDetailResource($booking->load([
@@ -68,7 +72,11 @@ class BookingController extends Controller
             return response()->json(['success' => false, 'message' => $e->getMessage()], 422);
         }
 
-        return response()->json(['success' => true, 'data' => new BookingResource($booking->load(['partner']))]);
+        return response()->json([
+            'success' => true,
+            'message' => 'Partner assigned successfully',
+            'data' => new BookingResource($booking->load(['partner'])),
+        ]);
     }
 
     public function assignPickupDriver(AssignPickupDriverRequest $request, Booking $booking, AssignmentService $service)
@@ -82,8 +90,10 @@ class BookingController extends Controller
         return response()->json(['success' => true, 'data' => new BookingResource($booking->load(['pickupDriver']))]);
     }
 
-    public function updateStatus(UpdateBookingStatusRequest $request, Booking $booking, BookingStateService $service)
+    public function updateStatus(UpdateBookingStatusRequest $request, Booking $booking, BookingStateService $service, CityScopeService $cityScope)
     {
+        $cityScope->ensureCanAccessModel(auth()->user(), $booking);
+
         try {
             $booking = $service->transition($booking, $request->status, auth()->user(), $request->note, true);
         } catch (InvalidArgumentException $e) {
@@ -93,20 +103,29 @@ class BookingController extends Controller
         return response()->json(['success' => true, 'data' => new BookingResource($booking)]);
     }
 
-    public function statusLogs(Booking $booking)
+    public function statusLogs(Booking $booking, CityScopeService $cityScope)
     {
+        $cityScope->ensureCanAccessModel(auth()->user(), $booking);
+
         return BookingStatusLogResource::collection($booking->statusLogs()->with('changedBy')->latest()->get())
             ->additional(['success' => true]);
     }
 
-    public function media(Booking $booking)
+    public function media(Booking $booking, CityScopeService $cityScope)
     {
+        $cityScope->ensureCanAccessModel(auth()->user(), $booking);
+
         return BookingMediaResource::collection($booking->media()->with('uploadedBy')->latest()->get())
             ->additional(['success' => true]);
     }
 
-    public function tracking(Booking $booking, LocationTrackingService $service)
+    public function tracking(Booking $booking, LocationTrackingService $service, CityScopeService $cityScope)
     {
-        return TrackingResource::collection($service->latestForBooking($booking))->additional(['success' => true]);
+        $cityScope->ensureCanAccessModel(auth()->user(), $booking);
+
+        return response()->json([
+            'success' => true,
+            'data' => $service->trackingSnapshot($booking),
+        ]);
     }
 }

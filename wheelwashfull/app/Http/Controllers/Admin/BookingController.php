@@ -32,6 +32,16 @@ class BookingController extends Controller
     {
         $query = Booking::with(['user', 'service', 'vehicle', 'partner']);
 
+        if ($request->filled('service_city_id')) {
+            $cityId = $request->service_city_id;
+            $query->where(function($q) use ($cityId) {
+                $q->where('service_city_id', $cityId)
+                  ->orWhereHas('worker', fn($w) => $w->where('service_city_id', $cityId))
+                  ->orWhereHas('partner', fn($p) => $p->where('service_city_id', $cityId))
+                  ->orWhereHas('pickupDriver', fn($d) => $d->where('service_city_id', $cityId));
+            });
+        }
+
         if ($request->filled('date_from')) {
             $query->whereDate('booking_date', '>=', $request->date_from);
         }
@@ -63,7 +73,9 @@ class BookingController extends Controller
         }
 
         $bookings = $query->orderBy('booking_date', 'desc')->orderBy('slot_time')->paginate(15);
-        $partners = User::where('role', 'partner')->get();
+        $partners = User::where('role', 'partner')
+            ->when($request->filled('service_city_id'), fn ($query) => $query->where('service_city_id', $request->service_city_id))
+            ->get();
 
         if ($request->expectsJson() || $request->is('api/*')) {
             return response()->json([
@@ -80,8 +92,17 @@ class BookingController extends Controller
 
     public function show(Request $request, Booking $booking)
     {
-        $booking->load(['user', 'service', 'vehicle', 'partner', 'images', 'rating', 'statusHistories.changedByUser', 'assignments.partner']);
-        $partners = User::where('role', 'partner')->get();
+        $booking->load(['user', 'service', 'vehicle', 'partner', 'images', 'rating', 'statusHistories.changedByUser', 'assignments.partner', 'assignments.worker', 'assignments.pickupDriver', 'assignments.deliveryDriver']);
+        $partners = User::where('role', 'partner')
+            ->when(request()->filled('service_city_id'), fn ($query) => $query->where('service_city_id', request('service_city_id')))
+            ->get();
+        $workers = User::where('role', 'worker')
+            ->when(request()->filled('service_city_id'), fn ($query) => $query->where('service_city_id', request('service_city_id')))
+            ->get();
+        $pickupDrivers = User::where('role', 'pickup_driver')
+            ->when(request()->filled('service_city_id'), fn ($query) => $query->where('service_city_id', request('service_city_id')))
+            ->get();
+            
         $validNextStatuses = $this->validNextStatuses($booking->status);
 
         if ($request->expectsJson() || $request->is('api/*')) {
@@ -90,59 +111,110 @@ class BookingController extends Controller
                 'data' => [
                     'booking' => $booking,
                     'partners' => $partners,
+                    'workers' => $workers,
+                    'pickup_drivers' => $pickupDrivers,
                     'valid_next_statuses' => $validNextStatuses,
                 ],
             ]);
         }
 
-        return view('admin.bookings.show', compact('booking', 'partners', 'validNextStatuses'));
+        return view('admin.bookings.show', compact('booking', 'partners', 'workers', 'pickupDrivers', 'validNextStatuses'));
     }
 
-    public function assignPartner(Request $request, Booking $booking)
+    public function assignTeam(Request $request, Booking $booking)
     {
-        $request->validate([
-            'partner_id' => 'required|exists:users,id',
-            'notes' => 'nullable|string',
-        ]);
-
         if (in_array($booking->status, ['completed', 'cancelled'])) {
             return $this->bookingResponse($request, false, 'Cannot reassign a completed or cancelled booking.', 422);
         }
 
-        $partner = User::findOrFail($request->partner_id);
-        if ($partner->role !== 'partner') {
-            return $this->bookingResponse($request, false, 'Selected user is not a partner.', 422);
+        if ($booking->wash_type === 'door_to_door' || $booking->service_mode === 'doorstep') {
+            $request->validate([
+                'worker_id' => 'required|exists:users,id',
+                'notes' => 'nullable|string',
+            ]);
+
+            $worker = User::findOrFail($request->worker_id);
+
+            $hasConflict = Booking::where('worker_id', $worker->id)
+                ->whereDate('booking_date', $booking->booking_date)
+                ->where('slot_time', $booking->slot_time)
+                ->whereNotIn('status', ['completed', 'cancelled'])
+                ->where('id', '!=', $booking->id)
+                ->exists();
+
+            if ($hasConflict) {
+                return $this->bookingResponse($request, false, 'Selected worker already has a booking in this slot.', 422);
+            }
+
+            $booking->assignments()->create([
+                'worker_id' => $worker->id,
+                'assigned_by' => auth()->id(),
+                'notes' => $request->notes,
+                'status' => 'active',
+                'assigned_at' => now(),
+            ]);
+
+            $booking->update([
+                'worker_id' => $worker->id,
+                'service_city_id' => $worker->service_city_id,
+                'service_zone_id' => $worker->service_zone_id,
+                'status' => 'assigned',
+            ]);
+
+            $this->partnerJobService->recordStatusChange($booking, 'assigned', auth()->user(), 'admin', $request->notes);
+
+            if ($booking->user) {
+                // Assuming workerAssigned exists, else it won't crash if handled safely.
+                if (method_exists($this->notificationService, 'workerAssigned')) {
+                    $this->notificationService->workerAssigned($booking, $worker);
+                }
+            }
+
+            return $this->bookingResponse($request, true, 'Worker assigned successfully.');
+        } else {
+            $request->validate([
+                'pickup_driver_id' => 'required|exists:users,id',
+                'partner_id' => 'required|exists:users,id',
+                'delivery_driver_id' => 'required|exists:users,id',
+                'notes' => 'nullable|string',
+            ]);
+
+            $driver = User::findOrFail($request->pickup_driver_id);
+            $partner = User::findOrFail($request->partner_id);
+            $deliveryDriver = User::findOrFail($request->delivery_driver_id);
+
+            $booking->assignments()->create([
+                'pickup_driver_id' => $driver->id,
+                'partner_id' => $partner->id,
+                'delivery_driver_id' => $deliveryDriver->id,
+                'assigned_by' => auth()->id(),
+                'notes' => $request->notes,
+                'status' => 'active',
+                'assigned_at' => now(),
+            ]);
+
+            $booking->update([
+                'pickup_driver_id' => $driver->id,
+                'partner_id' => $partner->id,
+                'delivery_driver_id' => $deliveryDriver->id,
+                'service_city_id' => $partner->service_city_id,
+                'service_zone_id' => $partner->service_zone_id,
+                'status' => 'assigned',
+            ]);
+
+            $this->partnerJobService->recordStatusChange($booking, 'assigned', auth()->user(), 'admin', $request->notes);
+
+            if ($booking->user) {
+                if (method_exists($this->notificationService, 'pickupDriverAssigned')) {
+                    $this->notificationService->pickupDriverAssigned($booking, $driver);
+                }
+                if (method_exists($this->notificationService, 'partnerAssigned')) {
+                    $this->notificationService->partnerAssigned($booking, $partner);
+                }
+            }
+
+            return $this->bookingResponse($request, true, 'Team assigned successfully.');
         }
-
-        $hasConflict = Booking::where('partner_id', $partner->id)
-            ->whereDate('booking_date', $booking->booking_date)
-            ->where('slot_time', $booking->slot_time)
-            ->whereNotIn('status', ['completed', 'cancelled'])
-            ->where('id', '!=', $booking->id)
-            ->exists();
-
-        if ($hasConflict) {
-            return $this->bookingResponse($request, false, 'Selected partner already has a booking in this slot.', 422);
-        }
-
-        $booking->assignments()->create([
-            'partner_id' => $partner->id,
-            'assigned_by' => auth()->id(),
-            'notes' => $request->notes,
-        ]);
-
-        $booking->update([
-            'partner_id' => $partner->id,
-            'status' => 'assigned',
-        ]);
-
-        $this->partnerJobService->recordStatusChange($booking, 'assigned', auth()->user(), 'admin', $request->notes);
-
-        if ($booking->user) {
-            $this->notificationService->sendPartnerAssigned($partner, $booking->user, $booking);
-        }
-
-        return $this->bookingResponse($request, true, 'Partner assigned successfully. Notifications sent.');
     }
 
     public function updateStatus(Request $request, Booking $booking)

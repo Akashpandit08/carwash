@@ -12,7 +12,15 @@ class AdminUserSeeder extends Seeder
     {
         User::updateOrCreate(
             ['mobile_number' => '9999999999'],
-            ['name' => 'WheelWash Admin', 'email' => 'admin@wheelwash.local', 'password' => 'password', 'role' => UserRole::ADMIN]
+            [
+                'name' => 'WheelWash Admin',
+                'email' => 'admin@wheelwash.local',
+                'password' => 'password',
+                'role' => UserRole::SUPER_ADMIN,
+                'status' => 'active',
+                'service_city_id' => null,
+                'service_zone_id' => null,
+            ]
         );
     }
 }

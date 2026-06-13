@@ -2,10 +2,12 @@ import React, { useState } from 'react';
 import { View, Text, StyleSheet, Alert } from 'react-native';
 import { AppInput } from '../../components/AppInput';
 import { AppButton } from '../../components/AppButton';
-import { sendOtp } from '../../api/authApi';
+import { loginWithPassword, sendOtp } from '../../api/authApi';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export const LoginScreen = ({ navigation }: any) => {
   const [phone, setPhone] = useState('');
+  const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
 
   const handleLogin = async () => {
@@ -30,6 +32,33 @@ export const LoginScreen = ({ navigation }: any) => {
     }
   };
 
+  const handlePasswordLogin = async () => {
+    if (!phone || !password) {
+      Alert.alert('Error', 'Please enter your phone number and password');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const response = await loginWithPassword(phone, password);
+      const data = response.data;
+      const token = data.token || data.access_token || data.data?.token;
+      const user = data.user || data.data?.user;
+
+      if (!token || !user) {
+        throw new Error('Invalid response format');
+      }
+
+      await AsyncStorage.setItem('userToken', token);
+      await AsyncStorage.setItem('userData', JSON.stringify(user));
+      navigation.replace('RoleRedirectScreen');
+    } catch (e: any) {
+      Alert.alert('Error', e.response?.data?.message || 'Invalid credentials');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <View style={styles.container}>
       <Text style={styles.title}>WashMate Operations</Text>
@@ -42,7 +71,16 @@ export const LoginScreen = ({ navigation }: any) => {
         value={phone}
         onChangeText={setPhone}
       />
+
+      <AppInput
+        label="Password"
+        placeholder="Enter password"
+        secureTextEntry
+        value={password}
+        onChangeText={setPassword}
+      />
       
+      <AppButton title="Login with Password" onPress={handlePasswordLogin} loading={loading} />
       <AppButton title="Send OTP" onPress={handleLogin} loading={loading} />
     </View>
   );

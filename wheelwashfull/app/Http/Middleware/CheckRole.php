@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Constants\UserRole;
 use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -35,19 +36,21 @@ class CheckRole
             return redirect()->route('admin.login');
         }
 
-        if (!$request->user()->hasAnyRole($roles)) {
+        $allowedRoles = $this->expandRoles($roles);
+
+        if (!$request->user()->hasAnyRole($allowedRoles)) {
             if ($request->expectsJson()) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Unauthorized. You do not have permission to access this resource.',
-                    'required_roles' => $roles,
+                    'required_roles' => $allowedRoles,
                     'your_role' => $request->user()->role,
                 ], 403);
             }
 
             // Redirect to appropriate login/home instead of hard 403
             $role = $request->user()->role;
-            if ($role === 'admin') {
+            if (UserRole::isAdminRole($role)) {
                 return redirect()->route('admin.dashboard');
             } elseif ($role === 'partner') {
                 return redirect()->route('partner.jobs.today');
@@ -61,5 +64,21 @@ class CheckRole
         }
 
         return $next($request);
+    }
+
+    private function expandRoles(array $roles): array
+    {
+        $expanded = [];
+
+        foreach ($roles as $role) {
+            if ($role === UserRole::ADMIN) {
+                $expanded = array_merge($expanded, UserRole::ADMIN_ROLES);
+                continue;
+            }
+
+            $expanded[] = $role;
+        }
+
+        return array_values(array_unique($expanded));
     }
 }

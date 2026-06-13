@@ -62,7 +62,7 @@ export default function LoginScreen() {
               </View>
               <View style={styles.divider} />
               <TextInput
-                style={styles.input}
+                style={[styles.input, Platform.OS === 'web' && ({ outlineStyle: 'none' } as any)]}
                 keyboardType="number-pad"
                 maxLength={10}
                 placeholder="Mobile number"
@@ -77,21 +77,12 @@ export default function LoginScreen() {
             <PrimaryButton title={loading ? 'Sending OTP...' : 'Send OTP'} icon="arrow-forward" onPress={loading ? undefined : onSendOtp} />
             {loading && <ActivityIndicator style={styles.loader} color={PRIMARY} />}
 
-            <View style={styles.apiBox}>
-              <Ionicons name="server-outline" size={16} color={MUTED} />
-              <Text style={styles.apiText}>API: {BASE_URL}</Text>
-            </View>
           </View>
 
           <View style={styles.terms}>
             <Ionicons name="lock-closed-outline" size={16} color={MUTED} />
             <Text style={styles.termsText}>By continuing, you agree to <Text style={styles.link}>Terms</Text> & <Text style={styles.link}>Privacy</Text></Text>
           </View>
-
-          <Pressable style={styles.helpBox}>
-            <Text style={styles.helpTitle}>Real phone setup</Text>
-            <Text style={styles.helpText}>Laravel must be reachable from this phone at the API URL above.</Text>
-          </Pressable>
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -113,14 +104,9 @@ const styles = StyleSheet.create({
   flag: { color: PRIMARY, fontSize: 15, fontWeight: '900' },
   prefix: { color: TEXT, fontSize: 20, fontWeight: '900' },
   divider: { height: 36, width: 1.5, backgroundColor: '#D3DCE8', marginHorizontal: 16 },
-  input: { flex: 1, color: TEXT, fontSize: 22, fontWeight: '700' },
+  input: { flex: 1, minWidth: 0, color: TEXT, fontSize: 22, fontWeight: '700' },
   loader: { marginTop: 12 },
-  apiBox: { marginTop: 16, backgroundColor: '#F3F7FC', borderRadius: 12, padding: 10, flexDirection: 'row', alignItems: 'center', gap: 8 },
-  apiText: { flex: 1, color: MUTED, fontSize: 12, fontWeight: '700' },
   terms: { marginTop: 18, flexDirection: 'row', gap: 8, alignItems: 'center', justifyContent: 'center' },
   termsText: { color: '#566172', fontSize: 13, fontWeight: '500', textAlign: 'center' },
   link: { color: PRIMARY, fontWeight: '800' },
-  helpBox: { marginTop: 14, padding: 14, borderRadius: 16, backgroundColor: '#EAF4FF' },
-  helpTitle: { color: TEXT, fontSize: 15, fontWeight: '900' },
-  helpText: { color: MUTED, fontSize: 13, lineHeight: 19, marginTop: 4 },
 });

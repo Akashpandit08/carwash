@@ -72,7 +72,7 @@ class BookingController extends Controller
     public function availableSlots(Request $request, SlotAvailabilityService $slotAvailabilityService)
     {
         $validated = $request->validate([
-            'service_id' => 'nullable|exists:services,id',
+            'service_id' => ['nullable', 'integer'],
             'wash_type' => ['required', Rule::in(WashType::ALL)],
             'latitude' => ['required', 'numeric'],
             'longitude' => ['required', 'numeric'],
@@ -83,13 +83,6 @@ class BookingController extends Controller
             ? Service::where('id', $validated['service_id'])->where('is_active', true)->first()
             : null;
 
-        if (!empty($validated['service_id']) && !$service) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Service not found or inactive.',
-            ], 422);
-        }
-
         return response()->json([
             'success' => true,
             'date' => $validated['date'],
@@ -99,7 +92,7 @@ class BookingController extends Controller
                 (float) $validated['latitude'],
                 (float) $validated['longitude'],
                 $validated['date'],
-                isset($validated['service_id']) ? (int) $validated['service_id'] : null
+                $service?->id
             ),
         ]);
     }
@@ -255,7 +248,7 @@ class BookingController extends Controller
 
         return response()->json([
             'success' => true,
-            'data' => TrackingResource::collection($trackingService->latestForBooking($booking)),
+            'data' => $trackingService->trackingSnapshot($booking),
         ]);
     }
 
@@ -306,6 +299,8 @@ class BookingController extends Controller
             'status' => 'cancelled',
             'cancellation_reason' => $request->input('reason', 'Cancelled by customer.')
         ]);
+
+        app(\App\Services\SubscriptionUsageService::class)->markBookingCancelled($booking->fresh());
 
         // Send cancellation push notifications to all involved parties
         $notificationService = app(\App\Services\NotificationService::class);

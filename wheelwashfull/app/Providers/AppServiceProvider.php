@@ -4,6 +4,8 @@ namespace App\Providers;
 
 use Illuminate\Support\ServiceProvider;
 
+use Illuminate\Http\UploadedFile;
+
 class AppServiceProvider extends ServiceProvider
 {
     /**
@@ -19,6 +21,22 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        //
+        UploadedFile::macro('storeOnCloudinary', function ($folder = null) {
+            $response = app(\Cloudinary\Cloudinary::class)->uploadApi()->upload($this->getRealPath(), [
+                'folder' => $folder,
+            ]);
+
+            return new class($response['secure_url']) {
+                private $secureUrl;
+                
+                public function __construct($secureUrl) {
+                    $this->secureUrl = $secureUrl;
+                }
+                
+                public function getSecurePath() {
+                    return $this->secureUrl;
+                }
+            };
+        });
     }
 }

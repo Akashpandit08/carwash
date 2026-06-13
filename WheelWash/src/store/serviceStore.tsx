@@ -28,7 +28,12 @@ export function ServiceProvider({ children }: { children: React.ReactNode }) {
       setServices(remote);
       const stored = await AsyncStorage.getItem(STORAGE_KEYS.selectedService);
       const parsed = stored ? JSON.parse(stored) as ServiceDto : null;
-      const selected = remote.find((item) => String(item.id) === String(parsed?.id)) || remote[0] || parsed || null;
+      const selected = remote.find((item) => String(item.id) === String(parsed?.id)) || remote[0] || null;
+      if (selected && remote.some((item) => String(item.id) === String(selected.id))) {
+        await AsyncStorage.setItem(STORAGE_KEYS.selectedService, JSON.stringify(selected));
+      } else if (!selected) {
+        await AsyncStorage.removeItem(STORAGE_KEYS.selectedService);
+      }
       setSelectedService(selected);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Service load failed.');

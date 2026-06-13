@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { ActivityIndicator, Alert, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Alert, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View, useWindowDimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { BORDER, MUTED, PRIMARY, TEXT, Vehicle } from '@/lib/wheelwash-data';
 import { Card, Logo, PrimaryButton, SelectedBadge } from '@/components/wheelwash/ui';
@@ -15,6 +15,8 @@ export default function AddVehicleScreen() {
   const [registrationNumber, setRegistrationNumber] = useState('UP80AB1234');
   const [fuelType, setFuelType] = useState('petrol');
   const { selectedVehicle, createVehicle, saveExistingVehicle, loading, error } = useVehicleStore();
+  const { width } = useWindowDimensions();
+  const isSmallScreen = width <= 380;
 
   useFocusEffect(
     useCallback(() => {
@@ -54,7 +56,7 @@ export default function AddVehicleScreen() {
     <SafeAreaView style={styles.root} edges={['top']}>
       <KeyboardAvoidingView style={styles.root} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <View style={styles.header}>
-          <TouchableOpacity style={styles.headerIcon} onPress={() => router.back()}>
+          <TouchableOpacity style={styles.headerIcon} onPress={() => router.canGoBack() ? router.back() : router.replace('/')}>
             <Ionicons name="arrow-back" size={26} color={TEXT} />
           </TouchableOpacity>
           <Logo />
@@ -70,13 +72,32 @@ export default function AddVehicleScreen() {
 
           {current && (
             <Card style={styles.current}>
-              <View style={styles.vehicleThumb}><Ionicons name="car-sport" size={32} color={PRIMARY} /></View>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.labelBlue}>Your Vehicle</Text>
-                <Text style={styles.currentName}>{current.brand} {current.model} - {current.registrationNumber}</Text>
+              <View style={[styles.vehicleThumb, isSmallScreen && styles.vehicleThumbSmall]}>
+                <Ionicons name="car-sport" size={32} color={PRIMARY} />
               </View>
-              <SelectedBadge />
-              <Ionicons name="chevron-down" size={24} color={TEXT} />
+              <View style={styles.currentInfo}>
+                <Text style={styles.labelBlue} numberOfLines={1}>Your Vehicle</Text>
+                <Text style={styles.currentName} numberOfLines={1}>{current.brand} {current.model}</Text>
+                <Text style={styles.currentSub} numberOfLines={1}>{current.registrationNumber}</Text>
+                {isSmallScreen && (
+                  <View style={styles.badgeWrapMobile}>
+                    <SelectedBadge />
+                  </View>
+                )}
+              </View>
+              {!isSmallScreen && (
+                <View style={styles.rightActionArea}>
+                  <SelectedBadge />
+                  <View style={styles.dropdownArrow}>
+                    <Ionicons name="chevron-down" size={24} color={TEXT} />
+                  </View>
+                </View>
+              )}
+              {isSmallScreen && (
+                <View style={styles.dropdownArrow}>
+                  <Ionicons name="chevron-down" size={24} color={TEXT} />
+                </View>
+              )}
             </Card>
           )}
 
@@ -138,10 +159,16 @@ const styles = StyleSheet.create({
   content: { paddingHorizontal: 22, paddingBottom: 28 },
   title: { color: TEXT, fontSize: 31, fontWeight: '900', marginTop: 8 },
   subtitle: { color: MUTED, fontSize: 17, marginTop: 6 },
-  current: { marginTop: 28, padding: 14, flexDirection: 'row', alignItems: 'center', gap: 14 },
-  vehicleThumb: { width: 94, height: 68, borderRadius: 12, backgroundColor: '#E8F3FF', alignItems: 'center', justifyContent: 'center' },
-  labelBlue: { color: PRIMARY, fontSize: 15, fontWeight: '800', marginBottom: 8 },
-  currentName: { color: TEXT, fontSize: 18, fontWeight: '900' },
+  current: { marginTop: 28, padding: 14, flexDirection: 'row', alignItems: 'center', gap: 14, width: '100%' },
+  vehicleThumb: { width: 110, height: 90, borderRadius: 12, backgroundColor: '#E8F3FF', alignItems: 'center', justifyContent: 'center' },
+  vehicleThumbSmall: { width: 86, height: 86 },
+  currentInfo: { flex: 1, minWidth: 0 },
+  labelBlue: { color: PRIMARY, fontSize: 15, fontWeight: '800', marginBottom: 4 },
+  currentName: { color: TEXT, fontSize: 18, fontWeight: '900', marginBottom: 4 },
+  currentSub: { color: MUTED, fontSize: 15, fontWeight: '700' },
+  badgeWrapMobile: { marginTop: 8, alignSelf: 'flex-start' },
+  rightActionArea: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  dropdownArrow: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
   formCard: { marginTop: 26, padding: 24 },
   formHead: { flexDirection: 'row', alignItems: 'center', gap: 16, marginBottom: 26 },
   addIcon: { width: 70, height: 70, borderRadius: 28, backgroundColor: '#E7F2FF', alignItems: 'center', justifyContent: 'center' },

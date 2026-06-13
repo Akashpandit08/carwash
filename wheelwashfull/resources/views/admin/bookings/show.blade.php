@@ -215,32 +215,93 @@
 
             <div class="card mb-3">
                 <div class="card-header">
-                    <h5 class="mb-0">Partner Assignment</h5>
+                    <h5 class="mb-0">Team Assignment</h5>
                 </div>
                 <div class="card-body">
-                    @if($booking->partner)
-                        <p class="text-muted mb-1"><small>Current Partner</small></p>
-                        <h6>{{ $booking->partner->name }}</h6>
-                        <p class="text-muted"><small>{{ $booking->partner->mobile_number }}</small></p>
-                    @else
-                        <p class="text-muted">Not assigned yet</p>
-                    @endif
+                    @if($booking->wash_type === 'door_to_door' || $booking->service_mode === 'doorstep')
+                        @if($booking->worker)
+                            <p class="text-muted mb-1"><small>Current Worker</small></p>
+                            <h6>{{ $booking->worker->name }}</h6>
+                            <p class="text-muted"><small>{{ $booking->worker->mobile_number }}</small></p>
+                        @else
+                            <p class="text-muted">Not assigned yet</p>
+                        @endif
 
-                    @if(in_array($booking->status, ['pending', 'assigned']))
-                    <form action="{{ route('admin.bookings.assignPartner', $booking) }}" method="POST" class="mt-3 border-top pt-3">
-                        @csrf
-                        <p class="mb-2 fw-semibold">Assign / Reassign</p>
-                        <select name="partner_id" class="form-select form-select-sm mb-2" required>
-                            <option value="">Select Partner</option>
-                            @foreach($partners as $partner)
-                                <option value="{{ $partner->id }}" {{ $booking->partner_id == $partner->id ? 'selected' : '' }}>
-                                    {{ $partner->name }}
-                                </option>
-                            @endforeach
-                        </select>
-                        <textarea name="notes" class="form-control form-control-sm mb-2" rows="2" placeholder="Assignment notes/reason (optional)"></textarea>
-                        <button type="submit" class="btn btn-primary btn-sm w-100">Assign Partner</button>
-                    </form>
+                        @if(in_array($booking->status, ['pending', 'assigned']))
+                        <form action="{{ route('admin.bookings.assignTeam', $booking) }}" method="POST" class="mt-3 border-top pt-3">
+                            @csrf
+                            <p class="mb-2 fw-semibold">Assign / Reassign Worker</p>
+                            <select name="worker_id" class="form-select form-select-sm mb-2" required>
+                                <option value="">Select Worker</option>
+                                @foreach($workers as $worker)
+                                    <option value="{{ $worker->id }}" {{ $booking->worker_id == $worker->id ? 'selected' : '' }}>
+                                        {{ $worker->name }}
+                                    </option>
+                                @endforeach
+                            </select>
+                            <textarea name="notes" class="form-control form-control-sm mb-2" rows="2" placeholder="Assignment notes/reason (optional)"></textarea>
+                            <button type="submit" class="btn btn-primary btn-sm w-100">Assign Worker</button>
+                        </form>
+                        @endif
+                    @else
+                        @if($booking->partner || $booking->pickupDriver || $booking->deliveryDriver)
+                            <div class="row">
+                                <div class="col-md-12 mb-2">
+                                    <p class="text-muted mb-1"><small>Pickup Driver</small></p>
+                                    <h6>{{ $booking->pickupDriver->name ?? 'Not assigned' }}</h6>
+                                </div>
+                                <div class="col-md-12 mb-2">
+                                    <p class="text-muted mb-1"><small>Washing Partner</small></p>
+                                    <h6>{{ $booking->partner->name ?? 'Not assigned' }}</h6>
+                                </div>
+                                <div class="col-md-12">
+                                    <p class="text-muted mb-1"><small>Delivery Driver</small></p>
+                                    <h6>{{ $booking->deliveryDriver->name ?? 'Not assigned' }}</h6>
+                                </div>
+                            </div>
+                        @else
+                            <p class="text-muted">Not assigned yet</p>
+                        @endif
+
+                        @if(in_array($booking->status, ['pending', 'assigned']))
+                        <form action="{{ route('admin.bookings.assignTeam', $booking) }}" method="POST" class="mt-3 border-top pt-3">
+                            @csrf
+                            <p class="mb-2 fw-semibold">Assign / Reassign Team</p>
+                            
+                            <label class="small text-muted mb-1">Pickup Driver</label>
+                            <select name="pickup_driver_id" class="form-select form-select-sm mb-2" required>
+                                <option value="">Select Pickup Driver</option>
+                                @foreach($pickupDrivers as $driver)
+                                    <option value="{{ $driver->id }}" {{ $booking->pickup_driver_id == $driver->id ? 'selected' : '' }}>
+                                        {{ $driver->name }}
+                                    </option>
+                                @endforeach
+                            </select>
+
+                            <label class="small text-muted mb-1">Washing Partner</label>
+                            <select name="partner_id" class="form-select form-select-sm mb-2" required>
+                                <option value="">Select Partner</option>
+                                @foreach($partners as $partner)
+                                    <option value="{{ $partner->id }}" {{ $booking->partner_id == $partner->id ? 'selected' : '' }}>
+                                        {{ $partner->name }}
+                                    </option>
+                                @endforeach
+                            </select>
+
+                            <label class="small text-muted mb-1">Delivery Driver</label>
+                            <select name="delivery_driver_id" class="form-select form-select-sm mb-2" required>
+                                <option value="">Select Delivery Driver</option>
+                                @foreach($pickupDrivers as $driver)
+                                    <option value="{{ $driver->id }}" {{ $booking->delivery_driver_id == $driver->id ? 'selected' : '' }}>
+                                        {{ $driver->name }}
+                                    </option>
+                                @endforeach
+                            </select>
+
+                            <textarea name="notes" class="form-control form-control-sm mb-2 mt-2" rows="2" placeholder="Assignment notes/reason (optional)"></textarea>
+                            <button type="submit" class="btn btn-primary btn-sm w-100">Assign Team</button>
+                        </form>
+                        @endif
                     @endif
                 </div>
             </div>
@@ -282,7 +343,7 @@
                     <li class="list-group-item">
                         <div class="d-flex justify-content-between align-items-start">
                             <div>
-                                <h6 class="mb-0 small fw-bold">{{ $assignment->partner->name ?? 'Unknown' }}</h6>
+                                <h6 class="mb-0 small fw-bold">{{ $assignment->worker->name ?? $assignment->partner->name ?? 'Unknown' }}</h6>
                                 <small class="text-muted d-block">By: {{ $assignment->assigner->name ?? 'System' }}</small>
                                 @if($assignment->notes)
                                     <small class="text-muted d-block fst-italic">"{{ $assignment->notes }}"</small>

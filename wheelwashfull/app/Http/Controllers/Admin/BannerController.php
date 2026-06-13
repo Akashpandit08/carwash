@@ -14,6 +14,10 @@ class BannerController extends Controller
     {
         $query = Banner::query();
 
+        if ($request->filled('service_city_id')) {
+            $query->where('service_city_id', $request->service_city_id);
+        }
+
         if ($request->filled('search')) {
             $query->where('title', 'like', '%'.$request->search.'%');
         }

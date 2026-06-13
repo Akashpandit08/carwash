@@ -4,9 +4,11 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\SendOtpRequest;
 use App\Http\Requests\VerifyOtpRequest;
+use App\Models\User;
 use App\Services\AuthService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash;
 
 class AuthController extends Controller
 {
@@ -76,13 +78,7 @@ class AuthController extends Controller
                 'success' => true,
                 'message' => 'Login successful.',
                 'data' => [
-                    'user' => [
-                        'id' => $user->id,
-                        'name' => $user->name,
-                        'mobile_number' => $user->mobile_number,
-                        'role' => $user->role,
-                        'email' => $user->email,
-                    ],
+                    'user' => $this->userPayload($user),
                     'token' => $token,
                     'token_type' => 'Bearer',
                 ],
@@ -104,16 +100,51 @@ class AuthController extends Controller
         return response()->json([
             'success' => true,
             'data' => [
-                'user' => [
-                    'id' => $request->user()->id,
-                    'name' => $request->user()->name,
-                    'mobile_number' => $request->user()->mobile_number,
-                    'role' => $request->user()->role,
-                    'email' => $request->user()->email,
-                ],
+                'user' => $this->userPayload($request->user()),
             ],
         ], 200);
     }
+
+    public function login(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'mobile_number' => ['required', 'string'],
+            'password' => ['required', 'string'],
+        ]);
+
+        $loginIdentifier = trim($validated['mobile_number']);
+
+        $user = User::where('mobile_number', $loginIdentifier)
+                    ->orWhere('email', $loginIdentifier)
+                    ->first();
+
+        if (! $user || ! Hash::check($validated['password'], $user->password)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Invalid credentials.',
+            ], 401);
+        }
+
+        if (($user->status ?? 'active') !== 'active') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Your account is inactive.',
+            ], 403);
+        }
+
+        $token = $this->authService->createToken($user);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Login successful.',
+            'data' => [
+                'user' => $this->userPayload($user),
+                'token' => $token,
+                'token_type' => 'Bearer',
+            ],
+        ]);
+    }
+
 
     /**
      * Logout user.
@@ -134,5 +165,47 @@ class AuthController extends Controller
                 'error' => config('app.debug') ? $e->getMessage() : null,
             ], 500);
         }
+    }
+
+    private function userPayload(User $user): array
+    {
+        $user->loadMissing(['serviceCity', 'serviceZone']);
+
+        return [
+            'id' => $user->id,
+            'name' => $user->name,
+            'mobile_number' => $user->mobile_number,
+            'role' => $user->role,
+            'status' => $user->status,
+            'email' => $user->email,
+            'service_city_id' => $user->service_city_id,
+            'service_city_name' => $user->serviceCity?->name,
+            'service_zone_id' => $user->service_zone_id,
+            'service_zone_name' => $user->serviceZone?->name,
+            'permissions' => $this->permissionsFor($user),
+        ];
+    }
+
+    private function permissionsFor(User $user): array
+    {
+        if ($user->isSuperAdmin()) {
+            return [
+                'manage_all_cities',
+                'manage_locations',
+                'manage_city_admins',
+                'view_all_city_data',
+                'assign_team',
+            ];
+        }
+
+        if ($user->isCityAdmin()) {
+            return [
+                'view_own_city_data',
+                'manage_own_city_operations',
+                'assign_own_city_team',
+            ];
+        }
+
+        return [];
     }
 }

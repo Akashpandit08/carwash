@@ -47,6 +47,6 @@ class SlotService
             }
         }
 
-        return $availableSlots;
+        return collect($availableSlots)->unique('time')->values()->all();
     }
 }

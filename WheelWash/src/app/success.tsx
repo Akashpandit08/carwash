@@ -33,10 +33,11 @@ export default function SuccessScreen() {
         <PrimaryButton
           title="Track Booking"
           icon="car-sport-outline"
+          style={{ width: '100%' }}
           onPress={() => bookingId && router.replace({ pathname: '/track', params: { id: bookingId } })}
           disabled={!bookingId}
         />
-        <PrimaryButton title="Back to Home" icon="home" outline onPress={() => router.replace('/(tabs)')} />
+        <PrimaryButton title="Back to Home" icon="home" outline style={{ width: '100%' }} onPress={() => router.replace('/(tabs)')} />
       </ScrollView>
     </SafeAreaView>
   );
@@ -56,9 +57,9 @@ function Detail({ icon, label, value }: { icon: keyof typeof Ionicons.glyphMap; 
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: '#fff' },
-  header: { paddingTop: 18 },
+  header: { paddingTop: 18, backgroundColor: '#fff', zIndex: 10, paddingBottom: 10 },
   content: { padding: 24, alignItems: 'center', gap: 20, paddingBottom: 28 },
-  check: { marginTop: 50, width: 170, height: 170, borderRadius: 85, backgroundColor: '#37D27F', alignItems: 'center', justifyContent: 'center' },
+  check: { marginTop: 20, width: 170, height: 170, borderRadius: 85, backgroundColor: '#37D27F', alignItems: 'center', justifyContent: 'center' },
   title: { color: TEXT, fontSize: 34, fontWeight: '900', marginTop: 10, textAlign: 'center' },
   subtitle: { color: '#34415A', fontSize: 20, lineHeight: 30, textAlign: 'center' },
   card: { width: '100%', marginTop: 18, overflow: 'hidden' },

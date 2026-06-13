@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Constants\UserRole;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -30,7 +31,7 @@ class AuthController extends Controller
 
         $user = User::where('email', $credentials['email'])->first();
 
-        if ($user && $user->role === 'admin' && Hash::check($credentials['password'], $user->password)) {
+        if ($user && UserRole::isAdminRole($user->role) && Hash::check($credentials['password'], $user->password)) {
             Auth::login($user, $request->boolean('remember'));
             return redirect()->route('admin.dashboard')->with('success', 'Logged in successfully');
         }

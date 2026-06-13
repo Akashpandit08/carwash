@@ -29,6 +29,11 @@ class MediaUploadService
         return $booking->media()->where('type', $type)->exists();
     }
 
+    public function mediaCount(Booking $booking, string $type): int
+    {
+        return $booking->media()->where('type', $type)->count();
+    }
+
     public function assertCanStatus(Booking $booking, string $newStatus): void
     {
         $requirements = [
@@ -36,12 +41,16 @@ class MediaUploadService
             'delivered' => MediaType::DELIVERY_PROOF,
         ];
 
+        if ($newStatus === 'service_started' && $booking->worker_id) {
+            $requirements[$newStatus] = MediaType::BEFORE_IMAGE;
+        }
+
         if ($newStatus === 'service_completed') {
             $requirements[$newStatus] = $booking->worker_id ? MediaType::AFTER_IMAGE : MediaType::PARTNER_SERVICE_PROOF;
         }
 
-        if (isset($requirements[$newStatus]) && !$this->hasMedia($booking, $requirements[$newStatus])) {
-            abort(422, "Missing required media: {$requirements[$newStatus]}.");
+        if (isset($requirements[$newStatus]) && $this->mediaCount($booking, $requirements[$newStatus]) < 4) {
+            abort(422, "Missing required media: {$requirements[$newStatus]}. Minimum 4 photos required.");
         }
     }
 }

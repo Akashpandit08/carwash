@@ -14,11 +14,23 @@ class ServiceCategory extends Model
         'description',
         'icon',
         'is_active',
+        'service_city_id',
+        'service_zone_id',
     ];
 
     protected $casts = [
         'is_active' => 'boolean',
     ];
+
+    public function serviceCity()
+    {
+        return $this->belongsTo(ServiceCity::class);
+    }
+
+    public function serviceZone()
+    {
+        return $this->belongsTo(ServiceZone::class);
+    }
 
     public function services()
     {

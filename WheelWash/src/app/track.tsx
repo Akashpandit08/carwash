@@ -4,6 +4,8 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { Brand, Radius, Shadow, Spacing, Typography } from '@/constants/theme';
 import { useBookingStore } from '@/store/bookingStore';
+import { LiveTrackingMap } from '../components/maps/LiveTrackingMap';
+import { asLatLng } from '../utils/maps';
 
 export default function TrackScreen() {
   const router = useRouter();
@@ -22,18 +24,51 @@ export default function TrackScreen() {
     }
   }, [bookingId, loadBooking, loadTracking]));
 
+  useEffect(() => {
+    if (!bookingId) return;
+    const interval = setInterval(() => {
+      loadTracking(bookingId);
+    }, 10000);
+    return () => clearInterval(interval);
+  }, [bookingId, loadTracking]);
+
+  const trackedUserLocation = (lat && lng) ? {
+    latitude: parseFloat(lat),
+    longitude: parseFloat(lng),
+    role: trackingData?.driver_location ? 'pickup_driver' as const : 'worker' as const,
+    lastSeenAt: trackingData?.worker_location?.updated_at || trackingData?.driver_location?.updated_at || trackingData?.updated_at,
+  } : undefined;
+
+  const destinationLocation = currentBooking ? {
+    latitude: parseFloat(currentBooking.latitude || '0'),
+    longitude: parseFloat(currentBooking.longitude || '0'),
+    title: 'Your Location'
+  } : undefined;
+
+  const garageLocation = currentBooking?.partner ? {
+    latitude: parseFloat(currentBooking.partner.latitude || '0'),
+    longitude: parseFloat(currentBooking.partner.longitude || '0'),
+    title: 'Washing Center'
+  } : undefined;
+
+  const mapDest = asLatLng(destinationLocation?.latitude, destinationLocation?.longitude) ? destinationLocation : undefined;
+  const mapGarage = asLatLng(garageLocation?.latitude, garageLocation?.longitude) ? garageLocation : undefined;
+
   return (
     <View style={styles.root}>
       <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent />
       <View style={styles.mapBackground}>
-        <View style={styles.mapGrid}><View style={styles.gridLineV} /><View style={styles.gridLineV2} /><View style={styles.gridLineH} /><View style={styles.gridLineH2} /></View>
-        <View style={styles.routeLine} />
-        <View style={styles.pinWrap}><Text style={styles.pinIcon}>Pin</Text><View style={styles.pinShadow} /></View>
-        <View style={styles.carPinWrap}><Text style={styles.pinIcon}>Car</Text></View>
+        <LiveTrackingMap 
+          height={600}
+          destination={mapDest as any}
+          garageLocation={mapGarage as any}
+          trackedUserLocation={trackedUserLocation as any}
+          loading={loading && !trackingData}
+        />
       </View>
 
       <SafeAreaView edges={['top']} style={[styles.topBar, { top: insets.top }]}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}><Text style={styles.backIcon}>Back</Text></TouchableOpacity>
+        <TouchableOpacity onPress={() => router.canGoBack() ? router.back() : router.replace('/')} style={styles.backBtn}><Text style={styles.backIcon}>Back</Text></TouchableOpacity>
         <Text style={styles.headerTitle}>Track Booking</Text>
         <View style={{ width: 40 }} />
       </SafeAreaView>

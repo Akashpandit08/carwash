@@ -14,6 +14,7 @@ class UploadBookingMediaRequest extends FormRequest
     {
         return [
             'type' => ['required', Rule::in(MediaType::ALL)],
+            'side' => ['nullable', 'in:front,back,left,right,extra'],
             'file' => ['required', 'file', 'mimes:jpg,jpeg,png,webp,pdf', 'max:10240'],
         ];
     }

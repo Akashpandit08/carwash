@@ -17,6 +17,9 @@
       "bundleIdentifier": "com.wheelwash.customer",
       "infoPlist": {
         "NSLocationWhenInUseUsageDescription": "WheelWash uses your location to find your service address for doorstep car wash bookings."
+      },
+      "config": {
+        "googleMapsApiKey": "$GOOGLE_MAPS_IOS_API_KEY"
       }
     },
     "android": {
@@ -28,12 +31,19 @@
       "permissions": [
         "ACCESS_COARSE_LOCATION",
         "ACCESS_FINE_LOCATION"
-      ]
+      ],
+      "config": {
+        "googleMaps": {
+          "apiKey": "$GOOGLE_MAPS_ANDROID_API_KEY"
+        }
+      }
     },
     "web": {
       "bundler": "metro"
     },
     "extra": {
+      "googleMapsAndroidApiKey": "$GOOGLE_MAPS_ANDROID_API_KEY",
+      "googleMapsIosApiKey": "$GOOGLE_MAPS_IOS_API_KEY",
       "eas": {
         "projectId": "9dcf48e1-e287-4dda-98fb-5c45aabb6c0c"
       },

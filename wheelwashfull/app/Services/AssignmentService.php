@@ -15,7 +15,8 @@ class AssignmentService
 {
     public function __construct(
         protected BookingStateService $stateService,
-        protected NotificationService $notificationService
+        protected NotificationService $notificationService,
+        protected CityScopeService $cityScope
     ) {}
 
     public function assignWorker(Booking $booking, int $workerId, int $adminId): Booking
@@ -24,7 +25,10 @@ class AssignmentService
             throw new InvalidArgumentException('Only doorstep bookings can be assigned to a worker.');
         }
 
+        $admin = User::findOrFail($adminId);
+        $this->cityScope->ensureCanAccessModel($admin, $booking);
         $worker = User::where('role', UserRole::WORKER)->findOrFail($workerId);
+        $this->ensureSameCity($booking, $worker, 'worker');
 
         return DB::transaction(function () use ($booking, $worker, $adminId) {
             if ($booking->status === BookingStatus::PENDING) {
@@ -43,7 +47,10 @@ class AssignmentService
 
     public function assignPartner(Booking $booking, int $partnerId, int $adminId): Booking
     {
+        $admin = User::findOrFail($adminId);
+        $this->cityScope->ensureCanAccessModel($admin, $booking);
         $partner = User::where('role', UserRole::PARTNER)->findOrFail($partnerId);
+        $this->ensureSameCity($booking, $partner, 'partner');
 
         return DB::transaction(function () use ($booking, $partner, $adminId) {
             if ($booking->status === BookingStatus::PENDING) {
@@ -71,7 +78,10 @@ class AssignmentService
             throw new InvalidArgumentException('Only pickup_drop bookings can be assigned to a pickup driver.');
         }
 
+        $admin = User::findOrFail($adminId);
+        $this->cityScope->ensureCanAccessModel($admin, $booking);
         $driver = User::where('role', UserRole::PICKUP_DRIVER)->findOrFail($driverId);
+        $this->ensureSameCity($booking, $driver, 'pickup driver');
 
         return DB::transaction(function () use ($booking, $driver, $adminId) {
             if ($booking->status === BookingStatus::PENDING) {
@@ -99,5 +109,12 @@ class AssignmentService
                 'status' => 'active',
             ])
         );
+    }
+
+    protected function ensureSameCity(Booking $booking, User $assignee, string $label): void
+    {
+        if ($booking->service_city_id && $assignee->service_city_id && (int) $booking->service_city_id !== (int) $assignee->service_city_id) {
+            throw new InvalidArgumentException("Selected {$label} belongs to another city.");
+        }
     }
 }

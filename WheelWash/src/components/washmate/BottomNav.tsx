@@ -2,6 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import React from 'react';
 import { Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Brand, Shadow, Spacing, Typography } from '@/constants/theme';
 
 export type TabName = 'home' | 'bookings' | 'vehicles' | 'profile';
@@ -25,6 +26,8 @@ const TABS: {
 ];
 
 export function BottomNav({ active, onTab }: BottomNavProps) {
+  const insets = useSafeAreaInsets();
+
   const goToTab = (tab: (typeof TABS)[number]) => {
     onTab?.(tab.name);
     if (active !== tab.name) {
@@ -33,7 +36,7 @@ export function BottomNav({ active, onTab }: BottomNavProps) {
   };
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { paddingBottom: Math.max(insets.bottom, Platform.OS === 'android' ? Spacing.base : Spacing.xs) }]}>
       {TABS.map((tab) => {
         const isActive = active === tab.name;
 

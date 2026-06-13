@@ -2,7 +2,9 @@
 
 namespace App\Http\Requests\Api;
 
+use App\Constants\UserRole;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class AssignPartnerRequest extends FormRequest
 {
@@ -10,6 +12,11 @@ class AssignPartnerRequest extends FormRequest
 
     public function rules(): array
     {
-        return ['partner_id' => ['required', 'exists:users,id']];
+        return [
+            'partner_id' => [
+                'required',
+                Rule::exists('users', 'id')->where('role', UserRole::PARTNER),
+            ],
+        ];
     }
 }

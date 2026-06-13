@@ -41,6 +41,37 @@
                             @enderror
                         </div>
 
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-6">
+                                <label for="service_city_id" class="form-label">City</label>
+                                <select class="form-select @error('service_city_id') is-invalid @enderror" id="service_city_id" name="service_city_id">
+                                    <option value="">All Cities (Global)</option>
+                                    @foreach($cities as $city)
+                                        <option value="{{ $city->id }}" {{ old('service_city_id') == $city->id ? 'selected' : '' }}>
+                                            {{ $city->name }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                                @error('service_city_id')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
+                            </div>
+                            <div class="col-md-6">
+                                <label for="service_zone_id" class="form-label">Zone</label>
+                                <select class="form-select @error('service_zone_id') is-invalid @enderror" id="service_zone_id" name="service_zone_id">
+                                    <option value="">All Zones</option>
+                                    @foreach($zones as $zone)
+                                        <option value="{{ $zone->id }}" {{ old('service_zone_id') == $zone->id ? 'selected' : '' }}>
+                                            {{ $zone->name }} ({{ $zone->city->name }})
+                                        </option>
+                                    @endforeach
+                                </select>
+                                @error('service_zone_id')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
+                            </div>
+                        </div>
+
                         <div class="mb-3">
                             <label for="price" class="form-label">Price (₹)</label>
                             <input type="number" class="form-control @error('price') is-invalid @enderror" id="price" name="price" step="0.01" required value="{{ old('price') }}">

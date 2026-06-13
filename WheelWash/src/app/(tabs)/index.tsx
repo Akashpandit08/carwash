@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router, useFocusEffect } from 'expo-router';
-import { useCallback, useState } from 'react';
-import { ActivityIndicator, Image, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { useCallback, useState, useRef, useEffect } from 'react';
+import { ActivityIndicator, Image, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View, useWindowDimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { AppBanner, getProfile, listBanners } from '@/api/customerApi';
 import { Card, ScreenHeader, SelectedBadge } from '@/components/wheelwash/ui';
@@ -69,41 +69,7 @@ export default function HomeTab() {
           <Ionicons name="options-outline" size={25} color={MUTED} />
         </View>
 
-        <TouchableOpacity
-          activeOpacity={0.9}
-          style={[styles.hero, { backgroundColor: heroBanner?.background_color || '#82D9F0' }]}
-          onPress={async () => {
-            if (heroBanner) {
-              await handleBannerPress(heroBanner, selectService, services);
-              return;
-            }
-            if (featured) await selectService(featured);
-            router.push('/service-detail');
-          }}
-        >
-          {heroImage ? (
-            <Image source={{ uri: heroImage }} style={StyleSheet.absoluteFill} resizeMode="cover" />
-          ) : null}
-          <View style={[styles.heroOverlay, !heroImage && styles.heroOverlayEmpty]} />
-          {!heroImage && (
-            <View style={styles.heroArt} pointerEvents="none">
-              <View style={styles.heroArtBubble}>
-                <Ionicons name="car-sport" size={44} color="#0B4AA9" />
-              </View>
-              <View style={styles.heroArtSmallBubble}>
-                <Ionicons name="water" size={24} color="#fff" />
-              </View>
-            </View>
-          )}
-          <View style={styles.heroCopy}>
-            <Text style={styles.heroTitle}>{heroBanner?.title || 'Book doorstep car wash in minutes'}</Text>
-            <Text style={styles.heroText}>{heroBanner?.subtitle || 'Professional care for your car, at your doorstep.'}</Text>
-            <View style={styles.heroButton}>
-              <Text style={styles.heroButtonText}>{heroBanner?.button_label || 'Book Now'}</Text>
-              <Ionicons name="arrow-forward" size={20} color="#fff" />
-            </View>
-          </View>
-        </TouchableOpacity>
+        <BannerCarousel banners={banners} featured={featured} selectService={selectService} services={services} />
 
         {vehiclesLoading ? (
           <Card style={styles.stateCard}><ActivityIndicator color={PRIMARY} /><Text style={styles.muted}>Loading vehicles...</Text></Card>
@@ -135,7 +101,7 @@ export default function HomeTab() {
           {serviceCategories.map((item) => (
             <TouchableOpacity key={item.title} style={styles.category} activeOpacity={0.85} onPress={() => router.push('/services')}>
               <View style={[styles.categoryIcon, { backgroundColor: item.tone }]}>
-                <Ionicons name={item.icon as keyof typeof Ionicons.glyphMap} size={34} color={item.color} />
+                <Ionicons name={item.icon as keyof typeof Ionicons.glyphMap} size={28} color={item.color} />
               </View>
               <Text style={styles.categoryText}>{item.title}</Text>
             </TouchableOpacity>
@@ -154,8 +120,8 @@ export default function HomeTab() {
               )}
               <View style={styles.serviceBody}>
                 <View style={styles.featureRow}>
-                  <Text style={styles.featureBadge}>Featured</Text>
-                  <Text style={styles.rating}>4.8</Text>
+                  <View style={styles.badgeWrap}><Text style={styles.featureBadgeText}>Featured</Text></View>
+                  <View style={styles.ratingWrap}><Text style={styles.ratingText}>4.8</Text></View>
                 </View>
                 <Text style={styles.serviceTitle}>{featured.name || featured.title || 'Service'}</Text>
                 <Text style={styles.serviceDesc}>{featured.short_description || featured.description || 'Professional car wash service.'}</Text>
@@ -186,12 +152,17 @@ export default function HomeTab() {
           ) : upcoming ? (
             <TouchableOpacity style={styles.upcomingRow} onPress={() => router.push({ pathname: '/booking-detail', params: { id: String(upcoming.id) } })}>
               <View style={styles.calendarIcon}><Ionicons name="calendar-outline" size={34} color={PRIMARY} /></View>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.vehicleName}>{upcoming.service?.name || upcoming.service?.title || 'Booking'}</Text>
-                <Text style={styles.muted}>{upcoming.booking_date || ''} {upcoming.booking_time || ''}</Text>
-                <Text style={styles.muted}>{upcoming.address || location?.fullAddress || ''}</Text>
+              <View style={{ flex: 1, alignItems: 'flex-start' }}>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', width: '100%', alignItems: 'center' }}>
+                  <Text style={[styles.vehicleName, { flex: 1 }]} numberOfLines={1}>{upcoming.service?.name || upcoming.service?.title || 'Booking'}</Text>
+                  <Ionicons name="chevron-forward" size={20} color={MUTED} />
+                </View>
+                <Text style={styles.muted}>{upcoming.booking_date || ''} {upcoming.booking_time ? `at ${upcoming.booking_time}` : ''}</Text>
+                <Text style={styles.muted} numberOfLines={2}>{upcoming.address || location?.fullAddress || ''}</Text>
+                <View style={[styles.statusBadge, { marginTop: 10 }]}>
+                   <Text style={styles.statusText}>{String(upcoming.status || 'pending').replace(/_/g, ' ').toUpperCase()}</Text>
+                </View>
               </View>
-              <Text style={styles.confirmed}>{upcoming.status || 'pending'}</Text>
             </TouchableOpacity>
           ) : (
             <View style={styles.upcomingRow}><Text style={styles.muted}>No upcoming booking yet.</Text></View>
@@ -214,38 +185,40 @@ const styles = StyleSheet.create({
   search: { marginTop: 16, height: 62, borderRadius: 20, borderWidth: 1.4, borderColor: BORDER, paddingHorizontal: 18, flexDirection: 'row', alignItems: 'center' },
   searchInput: { flex: 1, fontSize: 18, color: TEXT, marginLeft: 12 },
   searchDivider: { width: 1, height: 32, backgroundColor: '#E4EAF2', marginRight: 14 },
-  hero: { minHeight: 220, borderRadius: 22, overflow: 'hidden', marginTop: 20 },
-  heroOverlay: { ...StyleSheet.absoluteFill, backgroundColor: 'rgba(171,231,250,0.42)' },
+  hero: { minHeight: 240, borderRadius: 22, overflow: 'hidden', marginTop: 20 },
+  heroOverlay: { ...StyleSheet.absoluteFill, backgroundColor: 'rgba(0,0,0,0.45)' },
   heroOverlayEmpty: { backgroundColor: 'transparent' },
   heroArt: { position: 'absolute', right: -12, bottom: -10, width: 150, height: 150, alignItems: 'center', justifyContent: 'center' },
   heroArtBubble: { width: 112, height: 112, borderRadius: 56, backgroundColor: 'rgba(255,255,255,0.28)', alignItems: 'center', justifyContent: 'center' },
   heroArtSmallBubble: { position: 'absolute', right: 20, top: 16, width: 48, height: 48, borderRadius: 24, backgroundColor: 'rgba(11,74,169,0.62)', alignItems: 'center', justifyContent: 'center' },
-  heroCopy: { padding: 22, paddingRight: 96 },
-  heroTitle: { color: TEXT, fontSize: 29, lineHeight: 37, fontWeight: '900' },
-  heroText: { color: TEXT, fontSize: 16, lineHeight: 24, marginTop: 12 },
+  heroCopy: { padding: 24, paddingRight: 32 },
+  heroTitle: { color: '#fff', fontSize: 29, lineHeight: 37, fontWeight: '900' },
+  heroText: { color: '#fff', fontSize: 16, lineHeight: 24, marginTop: 12 },
   heroButton: { marginTop: 20, backgroundColor: '#0B4AA9', borderRadius: 16, minWidth: 152, alignSelf: 'flex-start', height: 56, paddingHorizontal: 18, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: 10 },
   heroButtonText: { color: '#fff', fontSize: 18, fontWeight: '900' },
   stateCard: { marginTop: 18, padding: 18, gap: 10, alignItems: 'center' },
-  vehicleCard: { marginTop: 18, padding: 14, flexDirection: 'row', alignItems: 'center', gap: 12 },
-  vehicleThumb: { width: 92, height: 66, borderRadius: 12, backgroundColor: '#E8F3FF', alignItems: 'center', justifyContent: 'center' },
+  vehicleCard: { marginTop: 18, padding: 16, flexDirection: 'row', alignItems: 'center', gap: 10 },
+  vehicleThumb: { width: 66, height: 66, borderRadius: 12, backgroundColor: '#EAF4FF', alignItems: 'center', justifyContent: 'center' },
   addVehicleCard: { marginTop: 18, padding: 18, flexDirection: 'row', alignItems: 'center', gap: 14 },
   addIcon: { width: 58, height: 58, borderRadius: 18, backgroundColor: '#EAF4FF', alignItems: 'center', justifyContent: 'center' },
   vehicleInfo: { flex: 1, minWidth: 0 },
   selectedWrap: { flexShrink: 0 },
   cardLabel: { color: PRIMARY, fontSize: 15, fontWeight: '800', marginBottom: 6 },
-  vehicleName: { color: TEXT, fontSize: 19, lineHeight: 25, fontWeight: '900' },
+  vehicleName: { color: TEXT, fontSize: 18, lineHeight: 24, fontWeight: '900' },
   muted: { color: MUTED, fontSize: 14, lineHeight: 22, marginTop: 4 },
-  categoryGrid: { flexDirection: 'row', gap: 14, marginTop: 20 },
-  category: { flex: 1, minHeight: 134, borderRadius: 16, borderWidth: 1, borderColor: BORDER, backgroundColor: '#fff', alignItems: 'center', justifyContent: 'center', padding: 8, elevation: 3, shadowColor: '#0B4DA2', shadowOpacity: 0.08, shadowRadius: 10 },
-  categoryIcon: { width: 66, height: 66, borderRadius: 22, alignItems: 'center', justifyContent: 'center', marginBottom: 12 },
-  categoryText: { color: TEXT, fontSize: 13, fontWeight: '700', textAlign: 'center' },
+  categoryGrid: { flexDirection: 'row', gap: 8, marginTop: 20, justifyContent: 'space-between' },
+  category: { flex: 1, minHeight: 124, borderRadius: 16, borderWidth: 1, borderColor: BORDER, backgroundColor: '#fff', alignItems: 'center', justifyContent: 'center', padding: 4, elevation: 3, shadowColor: '#0B4DA2', shadowOpacity: 0.08, shadowRadius: 10 },
+  categoryIcon: { width: 54, height: 54, borderRadius: 18, alignItems: 'center', justifyContent: 'center', marginBottom: 8 },
+  categoryText: { color: TEXT, fontSize: 12, fontWeight: '800', textAlign: 'center', lineHeight: 16 },
   serviceCard: { marginTop: 22, flexDirection: 'row', overflow: 'hidden' },
   serviceImage: { width: 150, minHeight: 224 },
   serviceImageEmpty: { alignItems: 'center', justifyContent: 'center', backgroundColor: '#EEF4FA' },
   serviceBody: { flex: 1, padding: 14 },
   featureRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  featureBadge: { backgroundColor: PRIMARY, color: '#fff', paddingHorizontal: 10, paddingVertical: 5, borderRadius: 8, fontWeight: '800' },
-  rating: { backgroundColor: SUCCESS, color: '#fff', paddingHorizontal: 10, paddingVertical: 6, borderRadius: 8, fontWeight: '900' },
+  badgeWrap: { backgroundColor: PRIMARY, paddingHorizontal: 10, paddingVertical: 5, borderRadius: 8 },
+  featureBadgeText: { color: '#fff', fontWeight: '800', fontSize: 13 },
+  ratingWrap: { backgroundColor: SUCCESS, paddingHorizontal: 10, paddingVertical: 5, borderRadius: 8 },
+  ratingText: { color: '#fff', fontWeight: '900', fontSize: 13 },
   serviceTitle: { color: TEXT, fontSize: 21, fontWeight: '900', marginTop: 12 },
   serviceDesc: { color: '#4F5B6D', fontSize: 14, lineHeight: 21, marginTop: 8 },
   metaRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 14, flexWrap: 'wrap' },
@@ -261,7 +234,11 @@ const styles = StyleSheet.create({
   viewAll: { color: PRIMARY, fontSize: 14, fontWeight: '800' },
   upcomingRow: { padding: 14, flexDirection: 'row', alignItems: 'center', gap: 14 },
   calendarIcon: { width: 70, height: 70, borderRadius: 18, backgroundColor: '#DDEEFF', alignItems: 'center', justifyContent: 'center' },
-  confirmed: { backgroundColor: '#DDF8EA', color: '#079558', paddingHorizontal: 12, paddingVertical: 9, borderRadius: 10, fontWeight: '800', overflow: 'hidden' },
+  statusBadge: { backgroundColor: '#DDF8EA', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 10 },
+  statusText: { color: '#079558', fontSize: 13, fontWeight: '900' },
+  dotsRow: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', marginTop: 12, gap: 6 },
+  dot: { width: 8, height: 8, borderRadius: 4, backgroundColor: '#D8E1EC' },
+  activeDot: { width: 24, backgroundColor: PRIMARY },
 });
 
 async function handleBannerPress(
@@ -295,4 +272,91 @@ async function handleBannerPress(
   if (banner.redirect_screen) {
     router.push(banner.redirect_screen as any);
   }
+}
+
+function BannerCarousel({ banners, featured, selectService, services }: any) {
+  const scrollRef = useRef<ScrollView>(null);
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const { width } = useWindowDimensions();
+  const heroWidth = width - 44;
+
+  const displayBanners = banners.length > 0 ? banners : [null];
+
+  useEffect(() => {
+    if (displayBanners.length <= 1) return;
+    const interval = setInterval(() => {
+      let nextIndex = currentIndex + 1;
+      if (nextIndex >= displayBanners.length) {
+        nextIndex = 0;
+      }
+      scrollRef.current?.scrollTo({ x: nextIndex * heroWidth, animated: true });
+      setCurrentIndex(nextIndex);
+    }, 4000);
+    return () => clearInterval(interval);
+  }, [currentIndex, displayBanners.length, heroWidth]);
+
+  return (
+    <View style={{ marginTop: 20 }}>
+      <ScrollView
+        ref={scrollRef}
+        horizontal
+        pagingEnabled
+        showsHorizontalScrollIndicator={false}
+        onMomentumScrollEnd={(e) => {
+          const index = Math.round(e.nativeEvent.contentOffset.x / heroWidth);
+          setCurrentIndex(index);
+        }}
+        style={{ borderRadius: 22, overflow: 'hidden' }}
+      >
+        {displayBanners.map((heroBanner: any, idx: number) => {
+          const heroImage = heroBanner?.image_url || heroBanner?.image;
+          return (
+            <TouchableOpacity
+              key={heroBanner?.id || idx}
+              activeOpacity={0.9}
+              style={[styles.hero, { width: heroWidth, marginTop: 0, backgroundColor: heroBanner?.background_color || '#82D9F0' }]}
+              onPress={async () => {
+                if (heroBanner) {
+                  await handleBannerPress(heroBanner, selectService, services);
+                  return;
+                }
+                if (featured) await selectService(featured);
+                router.push('/service-detail');
+              }}
+            >
+              {heroImage ? (
+                <Image source={{ uri: heroImage }} style={StyleSheet.absoluteFill} resizeMode="cover" />
+              ) : null}
+              <View style={[styles.heroOverlay, !heroImage && styles.heroOverlayEmpty]} />
+              {!heroImage && (
+                <View style={styles.heroArt} pointerEvents="none">
+                  <View style={styles.heroArtBubble}>
+                    <Ionicons name="car-sport" size={44} color="#0B4AA9" />
+                  </View>
+                  <View style={styles.heroArtSmallBubble}>
+                    <Ionicons name="water" size={24} color="#fff" />
+                  </View>
+                </View>
+              )}
+              <View style={styles.heroCopy}>
+                <Text style={styles.heroTitle}>{heroBanner?.title || 'Book doorstep car wash in minutes'}</Text>
+                <Text style={styles.heroText}>{heroBanner?.subtitle || 'Professional care for your car, at your doorstep.'}</Text>
+                <View style={styles.heroButton}>
+                  <Text style={styles.heroButtonText}>{heroBanner?.button_label || 'Book Now'}</Text>
+                  <Ionicons name="arrow-forward" size={20} color="#fff" />
+                </View>
+              </View>
+            </TouchableOpacity>
+          );
+        })}
+      </ScrollView>
+      {displayBanners.length > 1 && (
+        <View style={styles.dotsRow}>
+          {displayBanners.map((_: any, idx: number) => (
+            <View key={idx} style={[styles.dot, currentIndex === idx && styles.activeDot]} />
+          ))}
+        </View>
+      )}
+    </View>
+  );
 }

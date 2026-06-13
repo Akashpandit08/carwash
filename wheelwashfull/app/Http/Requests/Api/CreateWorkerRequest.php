@@ -12,14 +12,20 @@ class CreateWorkerRequest extends FormRequest
     {
         return [
             'name' => ['required', 'string', 'max:255'],
-            'email' => ['nullable', 'email'],
-            'mobile_number' => ['required', 'string', 'max:20'],
+            'email' => ['nullable', 'email', 'unique:users,email'],
+            'mobile_number' => ['required', 'string', 'max:20', 'unique:users,mobile_number'],
+            'password' => ['nullable', 'string', 'min:6'],
+            'service_city_id' => ['nullable', 'exists:service_cities,id'],
+            'service_zone_id' => ['nullable', 'exists:service_zones,id'],
             'partner_id' => ['nullable', 'exists:users,id'],
             'skills' => ['nullable', 'array'],
             'service_area' => ['nullable', 'string'],
+            'service_radius' => ['nullable', 'integer', 'min:0'],
             'latitude' => ['nullable', 'numeric'],
             'longitude' => ['nullable', 'numeric'],
-            'current_status' => ['nullable', 'in:available,busy,offline'],
+            'location_lat' => ['nullable', 'numeric'],
+            'location_lng' => ['nullable', 'numeric'],
+            'current_status' => ['nullable', 'in:available,busy,offline,active,inactive'],
         ];
     }
 }

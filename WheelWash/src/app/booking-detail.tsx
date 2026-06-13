@@ -5,7 +5,33 @@ import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { Brand, Radius, Shadow, Spacing, Typography } from '@/constants/theme';
 import { useBookingStore } from '@/store/bookingStore';
 
-const STATUSES = ['pending', 'confirmed', 'partner_assigned', 'worker_assigned', 'pickup_driver_assigned', 'driver_on_the_way', 'worker_on_the_way', 'car_picked_up', 'reached_partner', 'service_started', 'service_completed', 'out_for_delivery', 'delivered', 'completed', 'cancelled'];
+const DOOR_TO_DOOR_STATUSES = [
+  'pending',
+  'confirmed',
+  'worker_assigned',
+  'worker_on_the_way',
+  'service_started',
+  'service_completed',
+  'completed'
+];
+
+const PICKUP_WASH_STATUSES = [
+  'pending',
+  'confirmed',
+  'pickup_driver_assigned',
+  'driver_on_the_way',
+  'car_picked_up',
+  'reached_partner',
+  'service_started',
+  'service_completed',
+  'out_for_delivery',
+  'delivered',
+  'completed'
+];
+
+function formatStatus(status: string) {
+  return status.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
+}
 
 export default function BookingDetailScreen() {
   const router = useRouter();
@@ -13,7 +39,16 @@ export default function BookingDetailScreen() {
   const { id } = useLocalSearchParams<{ id?: string }>();
   const { currentBooking, loadBooking, loading, error } = useBookingStore();
   const bookingId = id || currentBooking?.id;
-  const currentIndex = Math.max(0, STATUSES.indexOf(String(currentBooking?.status || 'pending')));
+  
+  let activeStatuses = DOOR_TO_DOOR_STATUSES;
+  if (currentBooking?.wash_type === 'pickup_wash') {
+      activeStatuses = PICKUP_WASH_STATUSES;
+  }
+  if (currentBooking?.status === 'cancelled') {
+      activeStatuses = ['pending', 'cancelled'];
+  }
+
+  const currentIndex = Math.max(0, activeStatuses.indexOf(String(currentBooking?.status || 'pending')));
 
   useFocusEffect(useCallback(() => { if (bookingId) loadBooking(bookingId); }, [bookingId, loadBooking]));
 
@@ -22,7 +57,7 @@ export default function BookingDetailScreen() {
       <StatusBar barStyle="dark-content" backgroundColor={Brand.white} />
       <SafeAreaView edges={['top']} style={{ backgroundColor: Brand.white }}>
         <View style={styles.topBar}>
-          <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}><Text style={styles.backIcon}>Back</Text></TouchableOpacity>
+          <TouchableOpacity onPress={() => router.canGoBack() ? router.back() : router.replace('/')} style={styles.backBtn}><Text style={styles.backIcon}>Back</Text></TouchableOpacity>
           <Text style={styles.headerTitle}>Booking Detail</Text>
           <TouchableOpacity style={styles.trackBtn} onPress={() => router.push({ pathname: '/track', params: { id: String(bookingId || '') } })}><Text style={styles.trackBtnText}>Track</Text></TouchableOpacity>
         </View>
@@ -38,18 +73,18 @@ export default function BookingDetailScreen() {
               <View style={styles.card}>
                 <Text style={styles.sectionTitle}>Booking Status</Text>
                 <View style={styles.timeline}>
-                  {STATUSES.map((status, index) => {
+                  {activeStatuses.map((status, index) => {
                     const completed = index < currentIndex;
                     const active = index === currentIndex;
                     return (
                       <View key={status} style={styles.timelineStep}>
-                        {index < STATUSES.length - 1 && <View style={[styles.timelineLine, completed && styles.timelineLineCompleted]} />}
+                        {index < activeStatuses.length - 1 && <View style={[styles.timelineLine, completed && styles.timelineLineCompleted]} />}
                         <View style={[styles.timelineDot, completed && styles.timelineDotCompleted, active && styles.timelineDotActive]}>
                           {completed && <Text style={styles.checkIcon}>✓</Text>}
                           {active && <View style={styles.innerDot} />}
                         </View>
                         <View style={styles.timelineText}>
-                          <Text style={[styles.timelineTitle, (completed || active) && { color: Brand.textPrimary }]}>{status}</Text>
+                          <Text style={[styles.timelineTitle, (completed || active) && { color: Brand.textPrimary }]}>{formatStatus(status)}</Text>
                           <Text style={styles.timelineSub}>{active ? 'Current status' : completed ? 'Done' : 'Pending'}</Text>
                         </View>
                       </View>

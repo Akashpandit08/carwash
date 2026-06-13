@@ -122,6 +122,7 @@ class SlotAvailabilityService
 
                 return $slot;
             })
+            ->unique('time')
             ->values()
             ->all();
     }

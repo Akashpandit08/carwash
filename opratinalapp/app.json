@@ -10,7 +10,10 @@
       "expo-notifications"
     ],
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "config": {
+        "googleMapsApiKey": "$GOOGLE_MAPS_IOS_API_KEY"
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -18,10 +21,23 @@
         "foregroundImage": "./assets/android-icon-foreground.png",
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "package": "com.akashpandit08.WashMateOperations",
+      "config": {
+        "googleMaps": {
+          "apiKey": "$GOOGLE_MAPS_ANDROID_API_KEY"
+        }
       }
     },
     "web": {
       "favicon": "./assets/favicon.png"
+    },
+    "extra": {
+      "googleMapsAndroidApiKey": "$GOOGLE_MAPS_ANDROID_API_KEY",
+      "googleMapsIosApiKey": "$GOOGLE_MAPS_IOS_API_KEY",
+      "eas": {
+        "projectId": "ae4d3bfe-9c71-46db-b043-991e77d88f55"
+      }
     }
   }
 }

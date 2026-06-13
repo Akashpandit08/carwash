@@ -11,6 +11,8 @@ class Coupon extends Model
 
     protected $fillable = [
         'code',
+        'service_city_id',
+        'service_zone_id',
         'description',
         'discount_type',
         'discount_value',
@@ -35,6 +37,16 @@ class Coupon extends Model
     public function bookings()
     {
         return $this->hasMany(Booking::class);
+    }
+
+    public function serviceCity()
+    {
+        return $this->belongsTo(ServiceCity::class);
+    }
+
+    public function serviceZone()
+    {
+        return $this->belongsTo(ServiceZone::class);
     }
 
     public function isValid()

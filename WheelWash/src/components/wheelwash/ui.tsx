@@ -48,15 +48,17 @@ export function PrimaryButton({
   onPress,
   outline,
   disabled,
+  style,
 }: {
   title: string;
   icon?: keyof typeof Ionicons.glyphMap;
   onPress?: () => void;
   outline?: boolean;
   disabled?: boolean;
+  style?: any;
 }) {
   return (
-    <TouchableOpacity style={[styles.button, outline && styles.buttonOutline, disabled && styles.buttonDisabled]} onPress={onPress} activeOpacity={0.86} disabled={disabled}>
+    <TouchableOpacity style={[styles.button, outline && styles.buttonOutline, disabled && styles.buttonDisabled, style]} onPress={onPress} activeOpacity={0.86} disabled={disabled}>
       {icon && <Ionicons name={icon} size={22} color={outline ? PRIMARY : '#fff'} />}
       <Text style={[styles.buttonText, outline && styles.buttonOutlineText, disabled && styles.buttonDisabledText]}>{title}</Text>
     </TouchableOpacity>
@@ -92,14 +94,14 @@ const styles = StyleSheet.create({
   logoText: { color: '#1062D9', fontWeight: '900', letterSpacing: 0 },
   header: {
     minHeight: 64,
-    paddingHorizontal: 22,
+    paddingHorizontal: 24,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
   },
-  headerIcon: { width: 42, height: 42, alignItems: 'center', justifyContent: 'center' },
+  headerIcon: { padding: 8, alignItems: 'center', justifyContent: 'center' },
   headerTitle: { flex: 1, textAlign: 'center', color: TEXT, fontSize: 27, fontWeight: '800' },
-  notifyDot: { position: 'absolute', top: 9, right: 8, width: 9, height: 9, borderRadius: 5, backgroundColor: '#FF3B30' },
+  notifyDot: { position: 'absolute', top: 8, right: 8, width: 10, height: 10, borderRadius: 5, backgroundColor: '#FF3B30', borderWidth: 1.5, borderColor: '#fff' },
   card: {
     backgroundColor: '#fff',
     borderRadius: 18,
@@ -119,6 +121,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     flexDirection: 'row',
     gap: 10,
+    paddingHorizontal: 24,
   },
   buttonDisabled: { backgroundColor: '#D8E1EC' },
   buttonOutline: { backgroundColor: '#fff', borderWidth: 2, borderColor: PRIMARY },

@@ -28,6 +28,9 @@ class ReportService
         if (!empty($filters['service_id'])) {
             $query->where('service_id', $filters['service_id']);
         }
+        if (!empty($filters['service_city_id'])) {
+            $query->where('service_city_id', $filters['service_city_id']);
+        }
         if (!empty($filters['status'])) {
             $query->where('status', $filters['status']);
         }

@@ -27,7 +27,8 @@ class CreateBookingRequest extends FormRequest
             'address' => ['required', 'string'],
             'latitude' => ['nullable', Rule::requiredIf(fn () => request()->filled('wash_type')), 'numeric'],
             'longitude' => ['nullable', Rule::requiredIf(fn () => request()->filled('wash_type')), 'numeric'],
-            'payment_method' => ['required', 'in:cod,online'],
+            'payment_method' => ['required', 'in:cod,online,subscription'],
+            'customer_subscription_id' => ['nullable', 'exists:customer_subscriptions,id'],
             'coupon_code' => ['nullable', 'string'],
             'address_id' => ['nullable', 'exists:addresses,id'],
             'pickup_address_id' => [

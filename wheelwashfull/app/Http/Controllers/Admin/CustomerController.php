@@ -15,6 +15,10 @@ class CustomerController extends Controller
     {
         $query = User::where('role', 'customer');
 
+        if ($request->filled('service_city_id')) {
+            $query->where('service_city_id', $request->service_city_id);
+        }
+
         // Search by name or mobile
         if ($request->search) {
             $query->where(function ($q) use ($request) {

@@ -20,6 +20,8 @@ type BookingState = {
     bookingDate: string;
     bookingTime: string;
     location: UserLocation;
+    paymentMethod?: 'cod' | 'online' | 'subscription';
+    customerSubscriptionId?: string | number;
   }) => Promise<BookingDto>;
 };
 

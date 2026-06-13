@@ -9,7 +9,7 @@ class WorkerProfile extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['user_id', 'partner_id', 'skills', 'service_area', 'latitude', 'longitude', 'current_status', 'rating', 'total_jobs'];
+    protected $fillable = ['user_id', 'partner_id', 'skills', 'service_area', 'service_radius', 'latitude', 'longitude', 'current_status', 'rating', 'total_jobs'];
 
     protected $casts = ['skills' => 'array', 'latitude' => 'decimal:8', 'longitude' => 'decimal:8', 'rating' => 'decimal:2'];
 

@@ -14,18 +14,19 @@ export function asLatLng(latitude?: number | string | null, longitude?: number |
 }
 
 export function openDirections(latitude: number, longitude: number, label = 'Destination') {
-  const encodedLabel = encodeURIComponent(label);
+  if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) return;
   const nativeUrl = Platform.select({
     ios: `comgooglemaps://?daddr=${latitude},${longitude}&directionsmode=driving`,
     android: `google.navigation:q=${latitude},${longitude}`,
     default: `https://www.google.com/maps/dir/?api=1&destination=${latitude},${longitude}`,
   });
-  const webUrl = `https://www.google.com/maps/dir/?api=1&destination=${latitude},${longitude}&destination_place_id=${encodedLabel}`;
+  const webUrl = `https://www.google.com/maps/dir/?api=1&destination=${latitude},${longitude}&travelmode=driving`;
 
   Linking.openURL(nativeUrl || webUrl).catch(() => Linking.openURL(webUrl));
 }
 
 export function openMapPoint(latitude: number, longitude: number, label = 'Destination') {
+  if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) return;
   const encodedLabel = encodeURIComponent(label);
   const url = Platform.select({
     ios: `maps:0,0?q=${encodedLabel}@${latitude},${longitude}`,

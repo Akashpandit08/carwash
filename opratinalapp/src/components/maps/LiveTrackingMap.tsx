@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, StyleSheet, Text, View, Platform } from 'react-native';
+import { ActivityIndicator, StyleSheet, Text, View, Platform, TouchableOpacity } from 'react-native';
 import MapView, { Marker, PROVIDER_GOOGLE, AnimatedRegion } from 'react-native-maps';
-import { LatLng, minutesAgo, calculateBearing } from '../../utils/maps';
+import { LatLng, minutesAgo, calculateBearing, openMapPoint } from '../../utils/maps';
 
 type TrackedRole = 'worker' | 'pickup_driver' | 'partner' | 'customer';
 
@@ -32,7 +32,7 @@ export function LiveTrackingMap({
 }: LiveTrackingMapProps) {
   const mapRef = useRef<MapView | null>(null);
   const markers = useMemo(
-    () => [currentLocation, destination, trackedUserLocation, garageLocation, customerLocation].filter(Boolean) as LatLng[],
+    () => [currentLocation, destination, trackedUserLocation, garageLocation, customerLocation].filter(isValidLatLng) as LatLng[],
     [currentLocation, destination, trackedUserLocation, garageLocation, customerLocation]
   );
 
@@ -49,18 +49,21 @@ export function LiveTrackingMap({
   useEffect(() => {
     if (trackedUserLocation) {
       const newCoord = { latitude: trackedUserLocation.latitude, longitude: trackedUserLocation.longitude };
-      
+
       if (previousCoord.current) {
         if (previousCoord.current.latitude !== newCoord.latitude || previousCoord.current.longitude !== newCoord.longitude) {
           const newBearing = calculateBearing(previousCoord.current, newCoord);
           setBearing(newBearing);
-          
+
           if (Platform.OS === 'android') {
             animatedCoord.timing({
               latitude: newCoord.latitude,
               longitude: newCoord.longitude,
               duration: 2000,
               useNativeDriver: false,
+              toValue: 0,
+              latitudeDelta: 0,
+              longitudeDelta: 0
             }).start();
           } else {
             animatedCoord.timing({
@@ -70,6 +73,7 @@ export function LiveTrackingMap({
               longitudeDelta: 0,
               duration: 2000,
               useNativeDriver: false,
+              toValue: 0
             }).start();
           }
           previousCoord.current = newCoord;
@@ -113,14 +117,14 @@ export function LiveTrackingMap({
         style={StyleSheet.absoluteFill}
         initialRegion={{ ...initial, latitudeDelta: 0.035, longitudeDelta: 0.035 }}
       >
-        {currentLocation && <Marker coordinate={currentLocation} title="You" pinColor="#2563EB" />}
-        {destination && <Marker coordinate={destination} title={destination.title || 'Destination'} pinColor="#DC2626" />}
-        {customerLocation && <Marker coordinate={customerLocation} title={customerLocation.title || 'Customer'} pinColor="#F97316" />}
-        {garageLocation && <Marker coordinate={garageLocation} title={garageLocation.title || 'Washing Center'} pinColor="#7C3AED" />}
-        
-        {trackedUserLocation && (
+        {isValidLatLng(currentLocation) && <Marker coordinate={currentLocation} title="You" pinColor="#2563EB" />}
+        {isValidLatLng(destination) && <Marker coordinate={destination} title={destination.title || 'Destination'} pinColor="#DC2626" />}
+        {isValidLatLng(customerLocation) && <Marker coordinate={customerLocation} title={customerLocation.title || 'Customer'} pinColor="#F97316" />}
+        {isValidLatLng(garageLocation) && <Marker coordinate={garageLocation} title={garageLocation.title || 'Washing Center'} pinColor="#7C3AED" />}
+
+        {isValidLatLng(trackedUserLocation) && (
           <Marker.Animated
-            coordinate={animatedCoord}
+            coordinate={animatedCoord as any}
             title={trackedUserLocation.title || roleTitle(trackedUserLocation.role)}
             description={`Last updated ${minutesAgo(trackedUserLocation.lastSeenAt)}`}
             rotation={bearing}
@@ -137,11 +141,30 @@ export function LiveTrackingMap({
           </Marker.Animated>
         )}
       </MapView>
-      {trackedUserLocation?.lastSeenAt ? (
-        <View style={styles.badge}><Text style={styles.badgeText}>Last updated {minutesAgo(trackedUserLocation.lastSeenAt)}</Text></View>
-      ) : null}
+      <View style={styles.badgeRow}>
+        {trackedUserLocation?.lastSeenAt ? (
+          <View style={styles.badge}><Text style={styles.badgeText}>Last updated {minutesAgo(trackedUserLocation.lastSeenAt)}</Text></View>
+        ) : <View style={{ flex: 1 }} />}
+        
+        <TouchableOpacity 
+          style={styles.externalMapBtn} 
+          onPress={() => {
+             const target = customerLocation || destination || garageLocation || trackedUserLocation;
+             if (target) {
+                openMapPoint(target.latitude, target.longitude, target.title || 'Location');
+             }
+          }}
+        >
+          <Text style={styles.externalMapBtnText}>Open in Maps ↗</Text>
+        </TouchableOpacity>
+      </View>
     </View>
   );
+}
+
+function isValidLatLng(value?: LatLng | null): value is LatLng {
+  return typeof value?.latitude === 'number' && Number.isFinite(value.latitude)
+    && typeof value?.longitude === 'number' && Number.isFinite(value.longitude);
 }
 
 function roleTitle(role?: TrackedRole) {
@@ -158,8 +181,11 @@ const styles = StyleSheet.create({
   wrap: { borderRadius: 8, overflow: 'hidden', backgroundColor: '#E5E7EB', marginBottom: 12 },
   fallback: { borderRadius: 8, backgroundColor: '#E5E7EB', alignItems: 'center', justifyContent: 'center', padding: 16, marginBottom: 12 },
   fallbackText: { color: '#475569', fontWeight: '700', marginTop: 8, textAlign: 'center' },
-  badge: { position: 'absolute', left: 10, bottom: 10, backgroundColor: 'rgba(15,23,42,0.78)', paddingHorizontal: 10, paddingVertical: 6, borderRadius: 8 },
+  badge: { backgroundColor: 'rgba(15,23,42,0.78)', paddingHorizontal: 10, paddingVertical: 6, borderRadius: 8, alignSelf: 'flex-start' },
   badgeText: { color: '#FFFFFF', fontSize: 12, fontWeight: '700' },
+  badgeRow: { position: 'absolute', bottom: 10, left: 10, right: 10, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end', pointerEvents: 'box-none' },
+  externalMapBtn: { backgroundColor: '#FFFFFF', paddingHorizontal: 12, paddingVertical: 8, borderRadius: 8, elevation: 3, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.2, shadowRadius: 2 },
+  externalMapBtnText: { color: '#2563EB', fontSize: 12, fontWeight: '700' },
   carMarkerContainer: {
     width: 40,
     height: 40,

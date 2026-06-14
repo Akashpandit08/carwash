@@ -1,4 +1,4 @@
-import React, { useCallback } from 'react';
+import React, { useCallback, useEffect } from 'react';
 import { ActivityIndicator, ScrollView, StatusBar, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
@@ -40,14 +40,14 @@ export default function TrackScreen() {
   } : undefined;
 
   const destinationLocation = currentBooking ? {
-    latitude: parseFloat(currentBooking.latitude || '0'),
-    longitude: parseFloat(currentBooking.longitude || '0'),
+    latitude: parseFloat(String(currentBooking.latitude || '0')),
+    longitude: parseFloat(String(currentBooking.longitude || '0')),
     title: 'Your Location'
   } : undefined;
 
   const garageLocation = currentBooking?.partner ? {
-    latitude: parseFloat(currentBooking.partner.latitude || '0'),
-    longitude: parseFloat(currentBooking.partner.longitude || '0'),
+    latitude: parseFloat(String(currentBooking.partner.latitude || '0')),
+    longitude: parseFloat(String(currentBooking.partner.longitude || '0')),
     title: 'Washing Center'
   } : undefined;
 

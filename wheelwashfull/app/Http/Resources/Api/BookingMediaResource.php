@@ -13,6 +13,7 @@ class BookingMediaResource extends JsonResource
             'id' => $this->id,
             'booking_id' => $this->booking_id,
             'type' => $this->type,
+            'side' => $this->side,
             'file_path' => $this->file_path,
             'uploaded_by' => new UserResource($this->whenLoaded('uploadedBy')),
             'created_at' => $this->created_at?->toIso8601String(),

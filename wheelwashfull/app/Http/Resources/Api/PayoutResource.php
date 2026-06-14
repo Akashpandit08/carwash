@@ -19,6 +19,9 @@ class PayoutResource extends JsonResource
             'net_amount' => $this->net_amount,
             'payout_status' => $this->payout_status,
             'paid_at' => $this->paid_at?->toIso8601String(),
+            'paid_at_ist' => $this->paid_at?->timezone('Asia/Kolkata')->format('Y-m-d h:i A'),
+            'created_at_ist' => $this->created_at?->timezone('Asia/Kolkata')->format('Y-m-d h:i A'),
+            'updated_at_ist' => $this->updated_at?->timezone('Asia/Kolkata')->format('Y-m-d h:i A'),
         ];
     }
 }

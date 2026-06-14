@@ -31,24 +31,24 @@ export function openWhatsApp(phone?: string, message = '') {
 export function destinationForJob(job: any, phase?: string) {
   if (phase === 'pickup') {
     return {
-      latitude: job?.pickup_latitude || job?.latitude,
-      longitude: job?.pickup_longitude || job?.longitude,
+      latitude: job?.pickup_latitude || job?.pickupAddress?.latitude || job?.latitude,
+      longitude: job?.pickup_longitude || job?.pickupAddress?.longitude || job?.longitude,
       label: 'Customer pickup location',
     };
   }
 
   if (phase === 'delivery') {
     return {
-      latitude: job?.drop_latitude || job?.delivery_latitude || job?.latitude,
-      longitude: job?.drop_longitude || job?.delivery_longitude || job?.longitude,
+      latitude: job?.drop_latitude || job?.delivery_latitude || job?.dropAddress?.latitude || job?.latitude,
+      longitude: job?.drop_longitude || job?.delivery_longitude || job?.dropAddress?.longitude || job?.longitude,
       label: 'Customer delivery location',
     };
   }
 
   if (phase === 'partner') {
     return {
-      latitude: job?.partner?.latitude || job?.partner_latitude,
-      longitude: job?.partner?.longitude || job?.partner_longitude,
+      latitude: job?.partner?.latitude || job?.partner?.partner_profile?.latitude || job?.partner_latitude,
+      longitude: job?.partner?.longitude || job?.partner?.partner_profile?.longitude || job?.partner_longitude,
       label: 'Washing center',
     };
   }

@@ -16,6 +16,7 @@ class BookingStatusLogResource extends JsonResource
             'note' => $this->note,
             'changed_by' => new UserResource($this->whenLoaded('changedBy')),
             'created_at' => $this->created_at?->toIso8601String(),
+            'created_at_ist' => $this->created_at?->timezone('Asia/Kolkata')->format('Y-m-d h:i A'),
         ];
     }
 }

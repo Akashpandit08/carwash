@@ -15,6 +15,7 @@ class BookingMedia extends Model
         'booking_id',
         'uploaded_by_user_id',
         'type',
+        'side',
         'file_path',
     ];
 

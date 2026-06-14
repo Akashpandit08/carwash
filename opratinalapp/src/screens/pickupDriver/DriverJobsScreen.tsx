@@ -5,6 +5,7 @@ import { getPickupDriverAction } from '../../utils/statusFlow';
 import { BookingCard } from '../../components/BookingCard';
 import { LoadingView } from '../../components/LoadingView';
 import { EmptyState } from '../../components/EmptyState';
+import { apiErrorMessage, devLog, extractCollection } from '../../utils/apiResponse';
 
 const tabs = [
   { key: 'pickup', label: 'To Pick Up' },
@@ -17,12 +18,18 @@ export const DriverJobsScreen = ({ navigation }: any) => {
   const [jobs, setJobs] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState('');
 
   const fetchJobs = async () => {
     try {
       const res = await getDriverJobs(activeTab);
-      const items = res.data?.data?.data || res.data?.data || res.data || [];
-      setJobs(Array.isArray(items) ? items : []);
+      setJobs(extractCollection(res.data));
+      setError('');
+    } catch (e) {
+      const message = apiErrorMessage(e, 'Could not load trips.');
+      devLog('[Pickup driver jobs error]', e);
+      setError(message);
+      setJobs([]);
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -30,11 +37,13 @@ export const DriverJobsScreen = ({ navigation }: any) => {
   };
 
   useEffect(() => {
+    fetchJobs();
     const unsubscribe = navigation.addListener('focus', fetchJobs);
     return unsubscribe;
   }, [navigation, activeTab]);
 
   if (loading) return <LoadingView message="Loading trips..." />;
+  if (error) return <EmptyState title="Unable to load jobs" message={error} actionLabel="Retry" onAction={() => { setLoading(true); fetchJobs(); }} />;
 
   return (
     <View style={styles.container}>
@@ -49,7 +58,7 @@ export const DriverJobsScreen = ({ navigation }: any) => {
         data={jobs}
         keyExtractor={(item) => String(item.id)}
         renderItem={({ item }) => <BookingCard booking={{ ...item, action_hint: getPickupDriverAction(item)?.label }} onPress={() => navigation.navigate('PickupDriverJobDetailScreen', { bookingId: item.id })} />}
-        ListEmptyComponent={<EmptyState title="No Trips" message="No trips found for this tab." />}
+        ListEmptyComponent={<EmptyState title="No jobs assigned yet" message="No trips found for this tab." />}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); fetchJobs(); }} />}
         contentContainerStyle={jobs.length === 0 ? { flex: 1 } : { paddingBottom: 20 }}
       />

@@ -1,7 +1,7 @@
 import apiClient from './client';
 
 export const getPartnerDashboard = () => apiClient.get('/operations/partner/dashboard');
-export const getPartnerJobs = () => apiClient.get('/operations/partner/jobs');
+export const getPartnerJobs = (tab = 'new') => apiClient.get('/operations/partner/jobs', { params: { tab } });
 export const getPartnerJobDetail = (bookingId: string | number) => apiClient.get(`/operations/partner/jobs/${bookingId}`);
 
 export const getPartnerWorkers = () => apiClient.get('/operations/partner/workers'); // Assuming backend adds it if missing

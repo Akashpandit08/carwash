@@ -16,12 +16,10 @@ const washTypes: Array<{ label: string; value: WashType; icon: keyof typeof Ioni
   { label: 'Pickup Wash', value: 'pickup_wash', icon: 'car-outline' },
 ];
 
+import { getISTDateString } from '@/utils/date';
+
 function nextDays(count = 7) {
-  return Array.from({ length: count }, (_, index) => {
-    const date = new Date();
-    date.setDate(date.getDate() + index);
-    return date.toISOString().slice(0, 10);
-  });
+  return Array.from({ length: count }, (_, index) => getISTDateString(index));
 }
 
 export default function SelectSlotScreen() {

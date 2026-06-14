@@ -29,10 +29,12 @@ export type BookingDto = {
   booking_date?: string;
   booking_time?: string;
   address?: string;
+  latitude?: string | number | null;
+  longitude?: string | number | null;
   total_amount?: number | string;
   service?: { id?: string | number; name?: string; title?: string; price?: number | string; duration?: number | string };
   vehicle?: { brand?: string; model?: string; registration_number?: string; color?: string };
-  partner?: { name?: string; mobile_number?: string };
+  partner?: { name?: string; mobile_number?: string; latitude?: string | number | null; longitude?: string | number | null };
   worker?: { name?: string; mobile_number?: string };
   pickup_driver?: { name?: string; mobile_number?: string };
   latest_payment?: { id?: string | number; status?: string };

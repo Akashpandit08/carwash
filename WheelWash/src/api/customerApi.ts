@@ -33,8 +33,12 @@ export async function listBanners(position = 'home_top') {
 }
 
 export async function saveDeviceToken(payload: {
+  user_id?: string | number;
+  role?: string;
+  device_token?: string;
   expo_push_token?: string;
   fcm_token?: string;
+  platform?: string;
   device_type?: string;
   device_name?: string;
 }) {
@@ -45,6 +49,16 @@ export async function saveDeviceToken(payload: {
 export async function listNotifications() {
   const response = await apiClient.get('/app/notifications');
   return listFrom(response.data);
+}
+
+export async function markNotificationRead(notificationId: string | number) {
+  const response = await apiClient.post(`/app/notifications/${notificationId}/read`);
+  return unwrap(response.data);
+}
+
+export async function markAllNotificationsRead() {
+  const response = await apiClient.post('/app/notifications/read-all');
+  return unwrap(response.data);
 }
 
 export async function listAddresses() {

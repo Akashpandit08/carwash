@@ -31,7 +31,11 @@ export const ImageUploadBox: React.FC<ImageUploadBoxProps> = ({
       return;
     }
 
-    const result = await ImagePicker.launchCameraAsync({ mediaTypes: ImagePicker.MediaTypeOptions.Images, quality: 0.75 });
+    const result = await ImagePicker.launchCameraAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      quality: 0.75,
+      allowsEditing: false,
+    });
     if (result.canceled) return;
 
     const uri = result.assets[0]?.uri;
@@ -88,7 +92,7 @@ const styles = StyleSheet.create({
   title: { fontSize: 15, fontWeight: '700', marginBottom: 10, color: '#1F2937' },
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
   slot: {
-    width: '47%',
+    width: '48%',
     aspectRatio: 1.15,
     borderRadius: 8,
     borderWidth: 1,
@@ -99,17 +103,18 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   image: { position: 'absolute', top: 0, right: 0, bottom: 0, left: 0, width: '100%', height: '100%' },
-  addText: { fontSize: 16, fontWeight: '800', color: '#334155' },
+  addText: { fontSize: 15, fontWeight: '800', color: '#334155', textAlign: 'center' },
   slotLabel: {
     position: 'absolute',
     bottom: 0,
     left: 0,
     right: 0,
-    paddingVertical: 6,
+    paddingVertical: 7,
+    paddingHorizontal: 4,
     textAlign: 'center',
     backgroundColor: 'rgba(15, 23, 42, 0.72)',
     color: '#FFFFFF',
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '700',
     overflow: 'hidden',
   },

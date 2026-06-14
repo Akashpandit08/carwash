@@ -1,5 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import apiClient, { API_BASE_URL } from './client';
+import { parseUploadResponse } from '../utils/upload';
 
 export const getDriverDashboard = () => apiClient.get('/pickup-driver/dashboard');
 export const getDriverJobs = (tab = 'pickup') => apiClient.get('/pickup-driver/jobs', { params: { tab } });
@@ -27,12 +28,9 @@ export const uploadDriverPhoto = async (bookingId: string | number, type: string
     headers: {
       Authorization: `Bearer ${token}`,
       Accept: 'application/json',
-      'Content-Type': 'multipart/form-data',
     },
   });
-  const responseJson = await response.json();
-  if (!response.ok) throw new Error(responseJson.message || 'Upload failed');
-  return responseJson;
+  return parseUploadResponse(response);
 };
 
 export const uploadPickupImages = async (bookingId: string | number, formData: FormData) => {
@@ -43,12 +41,9 @@ export const uploadPickupImages = async (bookingId: string | number, formData: F
     headers: {
       Authorization: `Bearer ${token}`,
       Accept: 'application/json',
-      'Content-Type': 'multipart/form-data',
     },
   });
-  const responseJson = await response.json();
-  if (!response.ok) throw new Error(responseJson.message || 'Upload failed');
-  return responseJson;
+  return parseUploadResponse(response);
 };
 
 export const uploadDeliveryImages = uploadPickupImages;

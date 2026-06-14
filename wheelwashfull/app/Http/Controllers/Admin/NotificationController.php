@@ -91,6 +91,23 @@ class NotificationController extends Controller
         return back()->with('success', 'Notification send completed.');
     }
 
+    public function testPush()
+    {
+        $user = Auth::user();
+
+        $this->notifications->sendToUser($user, $user->role, 'WheelWash Test Push', 'This is a test push from the admin dashboard.', [
+            'event_type' => 'admin_test_push',
+            'screen' => 'notifications',
+        ]);
+
+        $activeDevices = $user->devices()->where('is_active', true)->count();
+        $message = $activeDevices > 0
+            ? "Test push queued for {$user->name}. Active devices: {$activeDevices}."
+            : "Test notification row created for {$user->name}, but no active device token is registered for this admin.";
+
+        return back()->with('success', $message);
+    }
+
     public function destroy(AppNotification $notification)
     {
         if ($notification->image) {

@@ -60,8 +60,9 @@ export function LiveTrackingMap({
               latitude: newCoord.latitude,
               longitude: newCoord.longitude,
               duration: 2000,
+              toValue: 0,
               useNativeDriver: false,
-            }).start();
+            } as any).start();
           } else {
             animatedCoord.timing({
               latitude: newCoord.latitude,
@@ -69,8 +70,9 @@ export function LiveTrackingMap({
               latitudeDelta: 0,
               longitudeDelta: 0,
               duration: 2000,
+              toValue: 0,
               useNativeDriver: false,
-            }).start();
+            } as any).start();
           }
           previousCoord.current = newCoord;
         }
@@ -120,7 +122,7 @@ export function LiveTrackingMap({
         
         {trackedUserLocation && (
           <Marker.Animated
-            coordinate={animatedCoord}
+            coordinate={animatedCoord as any}
             title={trackedUserLocation.title || roleTitle(trackedUserLocation.role)}
             description={`Last updated ${minutesAgo(trackedUserLocation.lastSeenAt)}`}
             rotation={bearing}

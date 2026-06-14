@@ -12,6 +12,7 @@ use App\Models\User;
 use App\Models\UserDevice;
 use App\Jobs\SendWhatsAppNotificationJob;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Collection as SupportCollection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -44,6 +45,20 @@ class NotificationService
         ?string $soundName = null
     ): void {
         try {
+            $data = array_merge([
+                'event_type' => $type,
+                'booking_id' => $bookingId,
+            ], $data);
+
+            if ($this->recentDuplicateExists($userId, $type, $bookingId, $data['status'] ?? null)) {
+                Log::info('Duplicate notification suppressed', [
+                    'user_id' => $userId,
+                    'event_type' => $type,
+                    'booking_id' => $bookingId,
+                ]);
+                return;
+            }
+
             $soundId = null;
             $soundFilePath = null;
 
@@ -66,13 +81,15 @@ class NotificationService
                 'body' => $body,
                 'channel' => 'push',
                 'type' => $type,
+                'event_type' => $type,
+                'user_id' => $userId,
                 'target_role' => $role,
                 'booking_id' => $bookingId,
                 'sound_id' => $soundId,
                 'screen' => $data['screen'] ?? null,
                 'data' => $data,
                 'status' => 'sent',
-                'sent_at' => now(),
+                'sent_at' => now('Asia/Kolkata'),
             ]);
 
             // Create recipient record
@@ -81,7 +98,7 @@ class NotificationService
                 'user_id' => $userId,
                 'role' => $role,
                 'status' => 'sent',
-                'sent_at' => now(),
+                'sent_at' => now('Asia/Kolkata'),
             ]);
 
             // Fetch active devices and send push
@@ -92,8 +109,7 @@ class NotificationService
             foreach ($devices as $device) {
                 $token = $device->expo_push_token ?? $device->device_token;
                 if ($token) {
-                    $this->dispatchExpoPush($token, $title, $body, array_merge($data, [
-                        'booking_id' => $bookingId,
+                    $this->sendExpoPush($token, $title, $body, array_merge($data, [
                         'type' => $type,
                         'sound' => $soundFilePath,
                         'notification_id' => $notification->id,
@@ -108,6 +124,55 @@ class NotificationService
                 'error' => $e->getMessage(),
             ]);
         }
+    }
+
+    public function sendToUser(User|int $user, string $role, string $title, string $body, array $data = []): void
+    {
+        $recipient = $user instanceof User ? $user : User::find($user);
+        if (! $recipient) {
+            return;
+        }
+
+        $eventType = $data['event_type'] ?? $data['type'] ?? 'general';
+        $bookingId = isset($data['booking_id']) ? (int) $data['booking_id'] : null;
+
+        $this->sendPushToUser($recipient->id, $role ?: $recipient->role, $title, $body, $bookingId, $eventType, $data);
+    }
+
+    public function sendToUsers(Collection|SupportCollection|array $users, string $title, string $body, array $data = []): void
+    {
+        foreach ($users as $user) {
+            if ($user instanceof User) {
+                $this->sendToUser($user, $user->role, $title, $body, $data);
+            } elseif (is_array($user) && isset($user['user_id'])) {
+                $this->sendToUser((int) $user['user_id'], $user['role'] ?? '', $title, $body, $data);
+            } elseif (is_numeric($user)) {
+                $this->sendToUser((int) $user, '', $title, $body, $data);
+            }
+        }
+    }
+
+    public function notifyAdminsForBooking($booking, string $title, string $body, array $data = []): void
+    {
+        $query = User::whereIn('role', UserRole::ADMIN_ROLES);
+
+        if ($booking?->service_city_id) {
+            $query->where(function ($adminQuery) use ($booking) {
+                $adminQuery
+                    ->whereIn('role', [UserRole::ADMIN, UserRole::SUPER_ADMIN])
+                    ->orWhere(function ($cityQuery) use ($booking) {
+                        $cityQuery->where('role', UserRole::CITY_ADMIN)
+                            ->where('service_city_id', $booking->service_city_id);
+                    });
+            });
+        }
+
+        $this->sendToUsers($query->get(), $title, $body, array_merge([
+            'screen' => 'booking_detail',
+            'booking_id' => $booking?->id,
+            'booking_number' => $booking?->booking_number,
+            'status' => $booking?->status,
+        ], $data));
     }
 
     /**
@@ -167,24 +232,25 @@ class NotificationService
     /**
      * Send Expo push notification to a device token.
      */
+    private function recentDuplicateExists(int $userId, string $eventType, ?int $bookingId, ?string $status = null): bool
+    {
+        return NotificationUser::where('user_id', $userId)
+            ->whereHas('notification', function ($query) use ($eventType, $bookingId, $status) {
+                $query->withoutGlobalScopes()
+                    ->where(function ($notificationQuery) use ($eventType) {
+                        $notificationQuery->where('event_type', $eventType)->orWhere('type', $eventType);
+                    })
+                    ->when($bookingId, fn ($notificationQuery) => $notificationQuery->where('booking_id', $bookingId))
+                    ->when($status, fn ($notificationQuery) => $notificationQuery->where('data->status', $status))
+                    ->where('created_at', '>=', now('Asia/Kolkata')->subMinutes(10));
+            })
+            ->exists();
+    }
+
     private function dispatchExpoPush(string $deviceToken, string $title, string $body, array $data = []): void
     {
         try {
-            $response = Http::timeout(10)->post('https://exp.host/--/api/v2/push/send', [
-                'to' => $deviceToken,
-                'sound' => 'default',
-                'title' => $title,
-                'body' => $body,
-                'data' => $data,
-            ]);
-
-            if (! $response->successful()) {
-                Log::warning('Expo push failed', [
-                    'token' => substr($deviceToken, 0, 20) . '...',
-                    'status' => $response->status(),
-                    'body' => $response->body(),
-                ]);
-            }
+            $this->sendExpoPush($deviceToken, $title, $body, $data);
         } catch (Throwable $e) {
             Log::error('dispatchExpoPush exception', [
                 'token' => substr($deviceToken, 0, 20) . '...',
@@ -212,6 +278,11 @@ class NotificationService
                 'status' => $booking->status,
             ]);
         }
+
+        $this->notifyAdminsForBooking($booking, 'Booking Accepted', 'A booking has been accepted.', [
+            'event_type' => 'booking_accepted',
+            'screen' => 'booking_detail',
+        ]);
     }
 
     /**
@@ -232,6 +303,19 @@ class NotificationService
         if ($customer) {
             $this->sendPushToUser($customer->id, 'customer', 'Worker Assigned', 'A worker has been assigned for your vehicle wash.', $booking->id, 'worker_assigned_customer', [
                 'screen' => 'booking_tracking',
+                'booking_id' => $booking->id,
+                'status' => $booking->status,
+            ]);
+        }
+
+        $this->notifyAdminsForBooking($booking, 'Worker Assigned', 'A worker has been assigned to a booking.', [
+            'event_type' => 'worker_assigned',
+            'screen' => 'booking_detail',
+        ]);
+
+        if ($booking->partner) {
+            $this->sendPushToUser($booking->partner->id, 'partner', 'Worker Assigned', 'A worker has been assigned to your booking.', $booking->id, 'worker_assigned_partner', [
+                'screen' => 'partner_booking_detail',
                 'booking_id' => $booking->id,
                 'status' => $booking->status,
             ]);
@@ -260,6 +344,11 @@ class NotificationService
                 'status' => $booking->status,
             ]);
         }
+
+        $this->notifyAdminsForBooking($booking, 'Partner Assigned', 'A partner has been assigned to a booking.', [
+            'event_type' => 'partner_assigned',
+            'screen' => 'booking_detail',
+        ]);
     }
 
     /**
@@ -284,6 +373,11 @@ class NotificationService
                 'status' => $booking->status,
             ]);
         }
+
+        $this->notifyAdminsForBooking($booking, 'Pickup Driver Assigned', 'A pickup driver has been assigned to a booking.', [
+            'event_type' => 'pickup_driver_assigned',
+            'screen' => 'booking_detail',
+        ]);
     }
 
     /**
@@ -366,6 +460,17 @@ class NotificationService
                         'status' => $newStatus,
                     ]);
                 }
+                if ($booking->partner) {
+                    $this->sendPushToUser($booking->partner->id, 'partner', 'Wash Started', 'Vehicle wash has started.', $booking->id, 'wash_started_partner', [
+                        'screen' => 'partner_booking_detail',
+                        'booking_id' => $booking->id,
+                        'status' => $newStatus,
+                    ]);
+                }
+                $this->notifyAdminsForBooking($booking, 'Wash Started', 'Vehicle wash has started.', [
+                    'event_type' => 'wash_started',
+                    'status' => $newStatus,
+                ]);
                 break;
 
             // 10. Worker completes wash
@@ -377,6 +482,17 @@ class NotificationService
                         'status' => $newStatus,
                     ]);
                 }
+                if ($booking->partner) {
+                    $this->sendPushToUser($booking->partner->id, 'partner', 'Wash Completed', 'Vehicle wash has been completed.', $booking->id, 'wash_completed_partner', [
+                        'screen' => 'partner_booking_detail',
+                        'booking_id' => $booking->id,
+                        'status' => $newStatus,
+                    ]);
+                }
+                $this->notifyAdminsForBooking($booking, 'Wash Completed', 'Vehicle wash has been completed.', [
+                    'event_type' => 'wash_completed',
+                    'status' => $newStatus,
+                ]);
                 // Notify pickup driver that vehicle is ready
                 if ($booking->pickupDriver) {
                     $this->sendPushToUser($booking->pickupDriver->id, 'pickup_driver', 'Vehicle Ready for Delivery', 'Vehicle is ready to be delivered to the customer.', $booking->id, 'ready_for_delivery', [
@@ -419,9 +535,9 @@ class NotificationService
                         'status' => $newStatus,
                     ]);
                 }
-                $this->sendPushToRole('admin', 'Booking Delivered', 'Vehicle delivery has been completed.', $booking->id, 'booking_delivered', [
-                    'screen' => 'partner_booking_detail',
-                    'booking_id' => $booking->id,
+                $this->notifyAdminsForBooking($booking, 'Booking Delivered', 'Vehicle delivery has been completed.', [
+                    'event_type' => 'vehicle_delivered',
+                    'screen' => 'booking_detail',
                     'status' => $newStatus,
                 ]);
                 break;
@@ -462,12 +578,21 @@ class NotificationService
     {
         $booking->loadMissing('user');
 
+        if ($booking->user) {
+            $this->sendPushToUser($booking->user->id, 'customer', 'Booking Created', 'Your booking has been created successfully.', $booking->id, 'booking_created', [
+                'screen' => 'booking_detail',
+                'booking_id' => $booking->id,
+                'booking_number' => $booking->booking_number,
+                'status' => $booking->status,
+            ]);
+        }
+
         // Notify all admins
-        $this->sendPushToRole('admin', 'New Booking Received', 'A new customer booking has been created.', $booking->id, 'booking_created', [
-            'screen' => 'partner_booking_detail',
-            'booking_id' => $booking->id,
+        $this->notifyAdminsForBooking($booking, 'New Booking Received', 'A new customer booking has been created.', [
+            'event_type' => 'booking_created',
+            'screen' => 'booking_detail',
             'status' => $booking->status,
-        ], 'booking_alert');
+        ]);
 
         // Notify assigned partner if any
         if ($booking->partner_id) {
@@ -505,9 +630,9 @@ class NotificationService
         }
 
         // Notify admin
-        $this->sendPushToRole('admin', 'Payment Received', 'Payment has been received for a booking.', $booking->id, 'payment_received', [
-            'screen' => 'partner_booking_detail',
-            'booking_id' => $booking->id,
+        $this->notifyAdminsForBooking($booking, 'Payment Received', 'Payment has been received for a booking.', [
+            'event_type' => 'payment_completed',
+            'screen' => 'booking_detail',
             'status' => $booking->status,
         ]);
     }
@@ -547,6 +672,11 @@ class NotificationService
         if ($booking->pickupDriver) {
             $this->sendPushToUser($booking->pickupDriver->id, 'pickup_driver', $title, $body, $booking->id, $type, array_merge($data, ['screen' => 'driver_job_detail']));
         }
+
+        $this->notifyAdminsForBooking($booking, $title, $body, array_merge($data, [
+            'event_type' => $type,
+            'screen' => 'booking_detail',
+        ]));
     }
 
     /**
@@ -571,6 +701,12 @@ class NotificationService
                 'status' => $booking->status,
             ]);
         }
+
+        $this->notifyAdminsForBooking($booking, 'Wash Proof Uploaded', 'Vehicle wash proof/images have been uploaded.', [
+            'event_type' => 'proof_uploaded',
+            'screen' => 'booking_detail',
+            'status' => $booking->status,
+        ]);
     }
 
     // =========================================================================
@@ -753,7 +889,7 @@ class NotificationService
         $failed = 0;
 
         foreach ($notification->recipients()->with('user.devices')->get() as $recipient) {
-            if (! $this->sendToUser($notification, $recipient->user, $recipient)) {
+            if (! $this->sendCampaignToUser($notification, $recipient->user, $recipient)) {
                 $failed++;
             }
         }
@@ -775,7 +911,7 @@ class NotificationService
         return $notification;
     }
 
-    public function sendToUser(AppNotification $notification, User $user, ?NotificationUser $recipient = null): bool
+    public function sendCampaignToUser(AppNotification $notification, User $user, ?NotificationUser $recipient = null): bool
     {
         $recipient ??= NotificationUser::firstOrCreate([
             'notification_id' => $notification->id,
@@ -813,23 +949,43 @@ class NotificationService
         }
     }
 
-    public function sendExpoPush(string $token, AppNotification $notification): void
+    public function sendExpoPush(string $token, AppNotification|string $notificationOrTitle, ?string $body = null, array $data = []): void
     {
+        if ($notificationOrTitle instanceof AppNotification) {
+            $title = $notificationOrTitle->title;
+            $body = $notificationOrTitle->message;
+            $data = [
+                'redirect_type' => $notificationOrTitle->redirect_type,
+                'redirect_value' => $notificationOrTitle->redirect_value,
+                'notification_id' => $notificationOrTitle->id,
+            ];
+        } else {
+            $title = $notificationOrTitle;
+            $body ??= '';
+        }
+
         $response = Http::timeout(10)->post('https://exp.host/--/api/v2/push/send', [
             'to' => $token,
-            'title' => $notification->title,
-            'body' => $notification->message,
+            'title' => $title,
+            'body' => $body,
             'sound' => 'default',
-            'data' => [
-                'redirect_type' => $notification->redirect_type,
-                'redirect_value' => $notification->redirect_value,
-                'notification_id' => $notification->id,
-            ],
+            'data' => $data,
         ]);
 
         if (! $response->successful()) {
+            Log::warning('Expo push failed', [
+                'token' => substr($token, 0, 20) . '...',
+                'status' => $response->status(),
+                'body' => $response->body(),
+            ]);
             throw new \RuntimeException('Expo push failed: '.$response->body());
         }
+
+        Log::info('Expo push sent', [
+            'token' => substr($token, 0, 20) . '...',
+            'status' => $response->status(),
+            'body' => $response->body(),
+        ]);
     }
 
     public function sendFirebasePush(string $token, AppNotification $notification): void

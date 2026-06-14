@@ -23,7 +23,7 @@ export default function LocationPermissionScreen() {
       }
 
       const location = await Location.getCurrentPositionAsync({});
-      let address = {};
+      let address: Partial<Location.LocationGeocodedAddress> = {};
       try {
         const reverse = await Location.reverseGeocodeAsync({
           latitude: location.coords.latitude,

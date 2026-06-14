@@ -127,6 +127,7 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
 
     // Notifications
     Route::resource('notifications', \App\Http\Controllers\Admin\NotificationController::class)->only(['index', 'create', 'store', 'show', 'destroy']);
+    Route::post('/notifications/test-push', [\App\Http\Controllers\Admin\NotificationController::class, 'testPush'])->name('notifications.test-push');
     Route::post('/notifications/{notification}/send', [\App\Http\Controllers\Admin\NotificationController::class, 'send'])->name('notifications.send');
 });
 

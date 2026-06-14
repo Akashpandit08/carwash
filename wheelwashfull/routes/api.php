@@ -41,6 +41,7 @@ Route::middleware('auth:api')->group(function () {
         Route::get('/notifications', [\App\Http\Controllers\Api\NotificationController::class, 'index']);
         Route::post('/notifications/{id}/read', [\App\Http\Controllers\Api\NotificationController::class, 'markRead']);
         Route::post('/notifications/read-all', [\App\Http\Controllers\Api\NotificationController::class, 'readAll']);
+        Route::post('/test-notification', [\App\Http\Controllers\Api\NotificationController::class, 'test']);
     });
 
     Route::prefix('partner')->group(function () {

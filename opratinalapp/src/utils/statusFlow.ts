@@ -50,7 +50,7 @@ export const normalizeWashType = (job: any): string => {
 };
 
 const isCash = (job: any): boolean => ['cash', 'cod'].includes(String(job?.payment_method || '').toLowerCase());
-const payableAmount = (job: any): string | number => job?.payable_amount || job?.total_amount || job?.final_price || job?.price || 0;
+const payableAmount = (job: any): number => Number(job?.payable_amount || job?.total_amount || job?.final_price || job?.price || 0);
 
 export function getWorkerAction(job: any): JobAction | null {
   if (normalizeWashType(job) !== 'door_to_door') return null;

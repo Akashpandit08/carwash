@@ -20,7 +20,15 @@
         </select>
         <button class="btn btn-primary">Filter</button>
     </form>
-    <a href="{{ route('admin.notifications.create') }}" class="btn btn-success">Create Notification</a>
+    <div class="d-flex gap-2">
+        <form method="POST" action="{{ route('admin.notifications.test-push') }}" onsubmit="return confirm('Send a test push to your admin account?')">
+            @csrf
+            <button class="btn btn-outline-primary" type="submit">
+                <i class="bi bi-send"></i> Send Test Push
+            </button>
+        </form>
+        <a href="{{ route('admin.notifications.create') }}" class="btn btn-success">Create Notification</a>
+    </div>
 </div>
 
 <div class="card">

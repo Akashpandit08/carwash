@@ -41,6 +41,8 @@ class BookingResource extends JsonResource
             'delivery_driver' => new UserResource($this->whenLoaded('deliveryDriver')),
             'vehicle' => $this->whenLoaded('vehicle'),
             'service' => $this->whenLoaded('service'),
+            'created_at_ist' => $this->created_at?->timezone('Asia/Kolkata')->format('Y-m-d h:i A'),
+            'updated_at_ist' => $this->updated_at?->timezone('Asia/Kolkata')->format('Y-m-d h:i A'),
         ];
     }
 }

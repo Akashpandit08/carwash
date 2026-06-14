@@ -10,7 +10,7 @@ use Illuminate\Http\UploadedFile;
 
 class MediaUploadService
 {
-    public function upload(Booking $booking, User $uploader, UploadedFile $file, string $type): BookingMedia
+    public function upload(Booking $booking, User $uploader, UploadedFile $file, string $type, ?string $side = null): BookingMedia
     {
         $filePath = method_exists($file, 'storeOnCloudinary')
             ? $file->storeOnCloudinary("bookings/{$booking->id}")->getSecurePath()
@@ -20,6 +20,7 @@ class MediaUploadService
             'booking_id' => $booking->id,
             'uploaded_by_user_id' => $uploader->id,
             'type' => $type,
+            'side' => $side,
             'file_path' => $filePath,
         ]);
     }

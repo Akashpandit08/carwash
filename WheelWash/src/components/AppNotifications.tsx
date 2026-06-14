@@ -45,7 +45,11 @@ export function AppNotifications() {
       const tokenResult = await Notifications.getExpoPushTokenAsync(projectId ? { projectId } : undefined);
 
       await saveDeviceToken({
+        user_id: user.id,
+        role: user.role || 'customer',
+        device_token: tokenResult.data,
         expo_push_token: tokenResult.data,
+        platform: Platform.OS,
         device_type: Platform.OS,
         device_name: Device.deviceName || undefined,
       });

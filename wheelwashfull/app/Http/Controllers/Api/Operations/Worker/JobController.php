@@ -10,9 +10,11 @@ use App\Http\Resources\Api\BookingDetailResource;
 use App\Http\Resources\Api\BookingMediaResource;
 use App\Http\Resources\Api\BookingResource;
 use App\Models\Booking;
+use App\Models\Payout;
 use App\Services\BookingStateService;
 use App\Services\DistanceService;
 use App\Services\MediaUploadService;
+use App\Services\NotificationService;
 use Illuminate\Http\Request;
 use InvalidArgumentException;
 
@@ -116,26 +118,54 @@ class JobController extends Controller
         return $this->transition($booking, $state, $request->status, $request->note);
     }
 
-    public function media(UploadBookingMediaRequest $request, Booking $booking, MediaUploadService $service)
+    public function media(UploadBookingMediaRequest $request, Booking $booking, MediaUploadService $service, NotificationService $notifications)
     {
         $this->authorizeJob($booking);
-        $media = $service->upload($booking, auth()->user(), $request->file('file'), $request->type);
+        $media = $service->upload($booking, auth()->user(), $request->file('file'), $request->type, $request->input('side'));
+        $notifications->notifyProofUploaded($booking->fresh());
 
         return response()->json(['success' => true, 'data' => new BookingMediaResource($media)], 201);
     }
 
     public function earnings()
     {
-        $completedBookings = $this->baseQuery()->where('status', BookingStatus::COMPLETED)->get();
-        $transactions = $completedBookings->map(fn ($booking) => [
-            'id' => $booking->id,
-            'booking_id' => $booking->id,
-            'amount' => $booking->total_amount ? round($booking->total_amount * 0.1, 2) : 0,
-            'status' => 'completed',
-            'date' => $booking->updated_at->toDateString(),
-        ]);
+        $payouts = Payout::with('booking')->where('user_id', auth()->id())->where('role', 'worker')->latest()->get();
 
-        return response()->json(['success' => true, 'data' => ['total_earnings' => $transactions->sum('amount'), 'transactions' => $transactions]]);
+        if ($payouts->isEmpty()) {
+            $completedBookings = $this->baseQuery()->where('status', BookingStatus::COMPLETED)->latest()->get();
+            $transactions = $completedBookings->map(fn ($booking) => [
+                'id' => $booking->id,
+                'booking_id' => $booking->id,
+                'amount' => $booking->total_amount ? round($booking->total_amount * 0.35, 2) : 0,
+                'status' => 'pending',
+                'date' => $booking->updated_at->toDateString(),
+            ]);
+
+            return response()->json(['success' => true, 'data' => [
+                'total_earnings' => $transactions->sum('amount'),
+                'pending_earnings' => $transactions->sum('amount'),
+                'paid_earnings' => 0,
+                'transactions' => $transactions,
+            ]]);
+        }
+
+        return response()->json(['success' => true, 'data' => $this->payoutSummary($payouts)]);
+    }
+
+    protected function payoutSummary($payouts): array
+    {
+        return [
+            'total_earnings' => round($payouts->sum('net_amount'), 2),
+            'pending_earnings' => round($payouts->whereIn('payout_status', ['pending', 'approved'])->sum('net_amount'), 2),
+            'paid_earnings' => round($payouts->where('payout_status', 'paid')->sum('net_amount'), 2),
+            'transactions' => $payouts->map(fn ($payout) => [
+                'id' => $payout->id,
+                'booking_id' => $payout->booking_id,
+                'amount' => (float) $payout->net_amount,
+                'status' => $payout->payout_status,
+                'date' => $payout->created_at->toDateString(),
+            ])->values(),
+        ];
     }
 
     public function profile()

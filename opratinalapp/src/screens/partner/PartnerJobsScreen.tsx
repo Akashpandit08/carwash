@@ -1,9 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { View, FlatList, StyleSheet, RefreshControl, Text, TouchableOpacity } from 'react-native';
 import apiClient from '../../api/client';
+import { getPartnerJobs } from '../../api/partnerApi';
 import { BookingCard } from '../../components/BookingCard';
 import { LoadingView } from '../../components/LoadingView';
 import { EmptyState } from '../../components/EmptyState';
+import { apiErrorMessage, devLog, extractCollection } from '../../utils/apiResponse';
 
 const TABS = [
   { id: 'new', label: 'New / Action Req' },
@@ -17,12 +19,17 @@ export const PartnerJobsScreen = ({ navigation }: any) => {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [activeTab, setActiveTab] = useState('new');
+  const [error, setError] = useState('');
 
   const fetchJobs = async (tab = activeTab) => {
     try {
-      const res = await apiClient.get(`/partner/jobs?tab=${tab}`);
-      setJobs(res.data?.data || res.data || []);
+      const res = await getPartnerJobs(tab);
+      setJobs(extractCollection(res.data));
+      setError('');
     } catch (e) {
+      const message = apiErrorMessage(e, 'Could not load jobs.');
+      devLog('[Partner jobs error]', e);
+      setError(message);
       setJobs([]);
     } finally {
       setLoading(false);
@@ -63,6 +70,8 @@ export const PartnerJobsScreen = ({ navigation }: any) => {
 
       {loading ? (
         <LoadingView message="Loading Jobs..." />
+      ) : error ? (
+        <EmptyState title="Unable to load jobs" message={error} actionLabel="Retry" onAction={() => { setLoading(true); fetchJobs(activeTab); }} />
       ) : (
         <FlatList
           data={jobs}
@@ -73,7 +82,7 @@ export const PartnerJobsScreen = ({ navigation }: any) => {
               onPress={() => navigation.navigate('PartnerJobDetailScreen', { bookingId: item.id })} 
             />
           )}
-          ListEmptyComponent={<EmptyState title="No Jobs Found" message="You don't have any jobs in this category." />}
+          ListEmptyComponent={<EmptyState title="No jobs assigned yet" message="You don't have any jobs in this category." />}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
           contentContainerStyle={jobs.length === 0 ? { flex: 1 } : { paddingBottom: 20, paddingTop: 10 }}
         />

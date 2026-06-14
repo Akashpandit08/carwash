@@ -10,7 +10,9 @@
       },
       "env": {
         "EXPO_PUBLIC_API_URL": "https://wheelwash.gutargu.app/api",
-        "EXPO_PUBLIC_STORAGE_URL": "https://wheelwash.gutargu.app/storage"
+        "EXPO_PUBLIC_STORAGE_URL": "https://wheelwash.gutargu.app/storage",
+        "GOOGLE_MAPS_ANDROID_API_KEY": "AIzaSyCWV2hNDdRgkcfXRi-4Z_yZ1c8Dal9idUU",
+        "GOOGLE_MAPS_IOS_API_KEY": "AIzaSyCT4WhJw73mwolgaO8Ui4lx0pk7dUBBLYo"
       }
     },
     "production": {
@@ -19,7 +21,9 @@
       },
       "env": {
         "EXPO_PUBLIC_API_URL": "https://wheelwash.gutargu.app/api",
-        "EXPO_PUBLIC_STORAGE_URL": "https://wheelwash.gutargu.app/storage"
+        "EXPO_PUBLIC_STORAGE_URL": "https://wheelwash.gutargu.app/storage",
+        "GOOGLE_MAPS_ANDROID_API_KEY": "AIzaSyCWV2hNDdRgkcfXRi-4Z_yZ1c8Dal9idUU",
+        "GOOGLE_MAPS_IOS_API_KEY": "AIzaSyCT4WhJw73mwolgaO8Ui4lx0pk7dUBBLYo"
       }
     }
   }

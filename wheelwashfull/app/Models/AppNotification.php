@@ -29,6 +29,7 @@ class AppNotification extends Model
         'created_by',
         'channel',
         'type',
+        'event_type',
         'user_id',
         'booking_id',
         'sound_id',

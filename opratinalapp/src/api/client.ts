@@ -5,6 +5,7 @@ import { API_BASE_URL } from '../config/api';
 
 const apiClient = axios.create({
   baseURL: API_BASE_URL,
+  timeout: 15000,
   headers: {
     Accept: 'application/json',
     'Content-Type': 'application/json',
@@ -37,12 +38,16 @@ apiClient.interceptors.response.use(
     const responseData = error.response?.data;
     const message = responseData?.message || error.message;
 
-    console.error(`[API ERROR] ${method} ${url}`);
-    console.error(`[API STATUS] ${status}`);
-    console.error(`[API REQUEST]`, requestBody);
-    console.error(`[API RESPONSE]`, responseData);
+    if (__DEV__) {
+      console.error(`[API ERROR] ${method} ${url}`);
+      console.error(`[API STATUS] ${status}`);
+      console.error(`[API REQUEST]`, requestBody);
+      console.error(`[API RESPONSE]`, responseData);
+    }
 
-    Alert.alert(`API Error: ${status || 'Network Error'}`, `Failed to fetch data from ${url}\n\nMessage: ${message}`);
+    if (status === 401) {
+      Alert.alert('Session expired', 'Please log in again.');
+    }
 
     return Promise.reject(error);
   }

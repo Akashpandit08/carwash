@@ -14,8 +14,10 @@ import { useServiceStore } from '@/store/serviceStore';
 import { useVehicleStore } from '@/store/vehicleStore';
 import { listMySubscriptions, CustomerSubscriptionDto } from '@/api/subscriptionApi';
 
+import { getISTDateString } from '@/utils/date';
+
 function todayString() {
-  return new Date().toISOString().slice(0, 10);
+  return getISTDateString();
 }
 
 export default function CheckoutScreen() {

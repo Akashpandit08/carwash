@@ -11,6 +11,7 @@ import {
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import apiClient from '../../api/client';
 import { markNotificationRead, markAllNotificationsRead } from '../../services/notificationService';
+import { apiErrorMessage, devLog, extractCollection } from '../../utils/apiResponse';
 
 type NotificationItem = {
   id: number;
@@ -39,11 +40,15 @@ export const NotificationsScreen = ({ navigation }: any) => {
   const [refreshing, setRefreshing] = useState(false);
   const [userId, setUserId] = useState<number | null>(null);
   const [userRole, setUserRole] = useState<string>('');
+  const [error, setError] = useState('');
 
   const fetchNotifications = useCallback(async () => {
     try {
       const userDataStr = await AsyncStorage.getItem('userData');
-      if (!userDataStr) return;
+      if (!userDataStr) {
+        setError('Please log in again to view notifications.');
+        return;
+      }
 
       const user = JSON.parse(userDataStr);
       setUserId(user.id);
@@ -53,10 +58,13 @@ export const NotificationsScreen = ({ navigation }: any) => {
         params: { user_id: user.id, role: user.role },
       });
 
-      const items = response.data?.data?.data || response.data?.data || [];
-      setNotifications(Array.isArray(items) ? items : []);
+      setNotifications(extractCollection(response.data));
+      setError('');
     } catch (error) {
-      console.error('Failed to fetch notifications:', error);
+      const message = apiErrorMessage(error, 'Could not load notifications.');
+      devLog('[Notifications error]', error);
+      setError(message);
+      setNotifications([]);
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -200,9 +208,13 @@ export const NotificationsScreen = ({ navigation }: any) => {
         contentContainerStyle={notifications.length === 0 ? styles.emptyContainer : styles.listContent}
         ListEmptyComponent={
           <View style={styles.emptyState}>
-            <Text style={styles.emptyIcon}>🔔</Text>
-            <Text style={styles.emptyTitle}>No Notifications</Text>
-            <Text style={styles.emptySubtitle}>You're all caught up!</Text>
+            <Text style={styles.emptyTitle}>{error ? 'Unable to Load Notifications' : 'No Notifications'}</Text>
+            <Text style={styles.emptySubtitle}>{error || "You're all caught up!"}</Text>
+            {error ? (
+              <TouchableOpacity style={styles.retryButton} onPress={fetchNotifications}>
+                <Text style={styles.retryText}>Retry</Text>
+              </TouchableOpacity>
+            ) : null}
           </View>
         }
       />
@@ -328,7 +340,7 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   emptyContainer: {
-    flex: 1,
+    flexGrow: 1,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -349,5 +361,17 @@ const styles = StyleSheet.create({
   emptySubtitle: {
     fontSize: 14,
     color: '#999',
+    textAlign: 'center',
+  },
+  retryButton: {
+    marginTop: 18,
+    backgroundColor: '#2196F3',
+    borderRadius: 8,
+    paddingHorizontal: 18,
+    paddingVertical: 10,
+  },
+  retryText: {
+    color: '#FFFFFF',
+    fontWeight: '700',
   },
 });

@@ -1,14 +1,17 @@
 import React, { useState } from 'react';
 import { Alert, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { postDriverAction, uploadDriverPhoto } from '../../api/pickupDriverApi';
 import { AppButton } from '../../components/AppButton';
 import { ImageUploadBox, PhotoMap, PhotoSide } from '../../components/ImageUploadBox';
 import { enqueuePhotoUploads } from '../../services/offlineUploadQueue';
+import { apiErrorMessage } from '../../utils/apiResponse';
 
 const REQUIRED: PhotoSide[] = ['front', 'back', 'left', 'right'];
 
 export const PickupExecutionScreen = ({ route, navigation }: any) => {
   const { job, action } = route.params;
+  const insets = useSafeAreaInsets();
   const [photos, setPhotos] = useState<PhotoMap>({});
   const [loading, setLoading] = useState(false);
   const missing = REQUIRED.filter((side) => !photos[side]);
@@ -41,7 +44,7 @@ export const PickupExecutionScreen = ({ route, navigation }: any) => {
         })));
         Alert.alert('Saved Offline', 'Photos saved offline. They will upload automatically when internet is back.');
       } else {
-        Alert.alert('Error', error.response?.data?.message || 'Failed to submit pickup proof.');
+        Alert.alert('Error', apiErrorMessage(error, 'Failed to submit pickup proof.'));
       }
     } finally {
       setLoading(false);
@@ -49,7 +52,8 @@ export const PickupExecutionScreen = ({ route, navigation }: any) => {
   };
 
   return (
-    <ScrollView style={styles.container}>
+    <SafeAreaView edges={['top', 'left', 'right']} style={styles.safe}>
+    <ScrollView style={styles.container} contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 24 }]}>
       <View style={styles.header}>
         <Text style={styles.title}>{action.label}</Text>
         <Text style={styles.subtitle}>Booking #{job.booking_number || job.booking_no || job.id}</Text>
@@ -57,11 +61,14 @@ export const PickupExecutionScreen = ({ route, navigation }: any) => {
       <ImageUploadBox title="Vehicle Condition Proof" photoMap={photos} onPhotoMapChange={setPhotos} requiredSides={REQUIRED} />
       <AppButton title={action.label} onPress={handlePickup} loading={loading} />
     </ScrollView>
+    </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#FFFFFF', padding: 16 },
+  safe: { flex: 1, backgroundColor: '#FFFFFF' },
+  container: { flex: 1, backgroundColor: '#FFFFFF' },
+  content: { padding: 16 },
   header: { marginBottom: 8 },
   title: { fontSize: 20, fontWeight: '800', color: '#111827' },
   subtitle: { marginTop: 4, fontSize: 14, color: '#64748B' },

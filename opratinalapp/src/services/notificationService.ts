@@ -3,6 +3,8 @@ import * as Device from 'expo-device';
 import { Platform } from 'react-native';
 import apiClient from '../api/client';
 
+const EAS_PROJECT_ID = process.env.EXPO_PUBLIC_EAS_PROJECT_ID || 'ae4d3bfe-9c71-46db-b043-991e77d88f55';
+
 /**
  * Setup notification handler for foreground notifications.
  * Call this once at app startup.
@@ -29,7 +31,7 @@ export async function registerForPushNotifications(
   role: string
 ): Promise<string | null> {
   if (!Device.isDevice || Platform.OS === 'web') {
-    console.log('Push notifications require a physical device and are not currently configured for web');
+    if (__DEV__) console.log('Push notifications require a physical device and are not currently configured for web');
     return null;
   }
 
@@ -44,17 +46,17 @@ export async function registerForPushNotifications(
     }
 
     if (finalStatus !== 'granted') {
-      console.log('Push notification permission not granted');
+      if (__DEV__) console.log('Push notification permission not granted');
       return null;
     }
 
     // Get Expo push token
     const tokenData = await Notifications.getExpoPushTokenAsync({
-      projectId: undefined,
+      projectId: EAS_PROJECT_ID,
     });
     const pushToken = tokenData.data;
 
-    console.log('Expo push token:', pushToken);
+    if (__DEV__) console.log('Expo push token:', pushToken);
 
     // Send token to backend
     try {
@@ -64,9 +66,9 @@ export async function registerForPushNotifications(
         device_token: pushToken,
         platform: Platform.OS,
       });
-      console.log('Device token registered with backend');
+      if (__DEV__) console.log('Device token registered with backend', { userId, role });
     } catch (error) {
-      console.error('Failed to register device token with backend:', error);
+      if (__DEV__) console.error('Failed to register device token with backend:', error);
     }
 
     // Setup Android notification channel
@@ -82,7 +84,7 @@ export async function registerForPushNotifications(
 
     return pushToken;
   } catch (error) {
-    console.error('Error registering for push notifications:', error);
+    if (__DEV__) console.error('Error registering for push notifications:', error);
     return null;
   }
 }
@@ -100,7 +102,7 @@ export function setupNotificationTapListener(navigationRef: any): () => void {
       const screen = data?.screen;
       const bookingId = data?.booking_id;
 
-      console.log('Notification tapped:', { screen, bookingId, data });
+      if (__DEV__) console.log('Notification tapped:', { screen, bookingId, data });
 
       if (!screen || !navigationRef?.current) return;
 
@@ -138,7 +140,7 @@ export function setupNotificationTapListener(navigationRef: any): () => void {
           break;
 
         default:
-          console.log('Unknown notification screen:', screen);
+          if (__DEV__) console.log('Unknown notification screen:', screen);
           break;
       }
     }
@@ -172,7 +174,7 @@ export async function markNotificationRead(notificationId: number | string): Pro
   try {
     await apiClient.post(`/app/notifications/${notificationId}/read`);
   } catch (error) {
-    console.error('Failed to mark notification as read:', error);
+    if (__DEV__) console.error('Failed to mark notification as read:', error);
   }
 }
 
@@ -189,6 +191,6 @@ export async function markAllNotificationsRead(
       role,
     });
   } catch (error) {
-    console.error('Failed to mark all notifications as read:', error);
+    if (__DEV__) console.error('Failed to mark all notifications as read:', error);
   }
 }

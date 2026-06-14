@@ -12,6 +12,7 @@ use App\Http\Resources\Api\BookingResource;
 use App\Models\Booking;
 use App\Services\BookingStateService;
 use App\Services\MediaUploadService;
+use App\Services\NotificationService;
 use InvalidArgumentException;
 
 class JobController extends Controller
@@ -27,9 +28,24 @@ class JobController extends Controller
         ]);
     }
 
-    public function index()
+    public function index(\Illuminate\Http\Request $request)
     {
-        return BookingResource::collection(Booking::with(['service', 'vehicle', 'user'])->where('partner_id', auth()->id())->latest()->paginate(request('per_page', 15)))
+        $query = Booking::with(['service', 'vehicle', 'user'])->where('partner_id', auth()->id());
+
+        match ($request->query('tab', 'new')) {
+            'in_progress' => $query->whereIn('status', [
+                BookingStatus::PARTNER_ASSIGNED,
+                BookingStatus::REACHED_PARTNER,
+                BookingStatus::SERVICE_STARTED,
+                BookingStatus::SERVICE_COMPLETED,
+                BookingStatus::OUT_FOR_DELIVERY,
+            ]),
+            'completed' => $query->where('status', BookingStatus::COMPLETED),
+            'all' => null,
+            default => $query->whereNotIn('status', [BookingStatus::COMPLETED, BookingStatus::CANCELLED]),
+        };
+
+        return BookingResource::collection($query->latest()->paginate($request->query('per_page', 15)))
             ->additional(['success' => true]);
     }
 
@@ -55,10 +71,11 @@ class JobController extends Controller
         return response()->json(['success' => true, 'data' => new BookingResource($booking)]);
     }
 
-    public function media(UploadBookingMediaRequest $request, Booking $booking, MediaUploadService $service)
+    public function media(UploadBookingMediaRequest $request, Booking $booking, MediaUploadService $service, NotificationService $notifications)
     {
         $this->authorizeJob($booking);
-        $media = $service->upload($booking, auth()->user(), $request->file('file'), $request->type);
+        $media = $service->upload($booking, auth()->user(), $request->file('file'), $request->type, $request->input('side'));
+        $notifications->notifyProofUploaded($booking->fresh());
 
         return response()->json(['success' => true, 'data' => new BookingMediaResource($media)], 201);
     }

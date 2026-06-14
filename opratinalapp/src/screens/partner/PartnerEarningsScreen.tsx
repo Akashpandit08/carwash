@@ -87,7 +87,7 @@ export const PartnerEarningsScreen = () => {
               <Text style={styles.ledgerTitle}>Booking #{item.booking_id}</Text>
               <Text style={styles.ledgerAmount}>+ ₹{item.amount}</Text>
             </View>
-            <Text style={styles.ledgerDate}>{new Date(item.date).toLocaleDateString()}</Text>
+            <Text style={styles.ledgerDate}>{new Date(item.date).toLocaleDateString('en-IN', { timeZone: 'Asia/Kolkata' })}</Text>
             <View style={styles.row}>
               <Text style={styles.ledgerDetail}>Mode: {item.payment_mode}</Text>
               <Text style={styles.ledgerDetail}>Comm: ₹{item.commission}</Text>

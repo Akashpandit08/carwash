@@ -10,6 +10,14 @@ let Notifications: any = null;
 
 try {
   Notifications = require('expo-notifications');
+  Notifications.setNotificationHandler({
+    handleNotification: async () => ({
+      shouldShowBanner: true,
+      shouldShowList: true,
+      shouldPlaySound: true,
+      shouldSetBadge: false,
+    }),
+  });
 } catch {
   Notifications = null;
 }
@@ -29,20 +37,27 @@ export function AppNotifications() {
 
       if (Platform.OS === 'android') {
         await Notifications.setNotificationChannelAsync('default', {
-          name: 'default',
+          name: 'Default',
           importance: Notifications.AndroidImportance.MAX,
+          vibrationPattern: [0, 250, 250, 250],
+          enableVibrate: true,
+          lightColor: '#0877F2',
+          sound: 'default',
         });
       }
 
       const existing = await Notifications.getPermissionsAsync();
+      if (__DEV__) console.log('Notification permission existing status:', existing.status);
       const permission = existing.status === 'granted'
         ? existing
         : await Notifications.requestPermissionsAsync();
+      if (__DEV__) console.log('Notification permission final status:', permission.status);
 
       if (permission.status !== 'granted' || cancelled) return;
 
       const projectId = Constants.expoConfig?.extra?.eas?.projectId;
       const tokenResult = await Notifications.getExpoPushTokenAsync(projectId ? { projectId } : undefined);
+      if (__DEV__) console.log('Expo push token generated:', tokenResult.data);
 
       await saveDeviceToken({
         user_id: user.id,
@@ -53,14 +68,41 @@ export function AppNotifications() {
         device_type: Platform.OS,
         device_name: Device.deviceName || undefined,
       });
+      if (__DEV__) console.log('Device token registered with backend', { user_id: user.id, role: user.role || 'customer' });
     };
 
-    register().catch(() => undefined);
-
-    receivedSub = Notifications.addNotificationReceivedListener(() => undefined);
-    responseSub = Notifications.addNotificationResponseReceivedListener((response: any) => {
-      handleNotificationRedirect(response?.notification?.request?.content?.data || {}).catch(() => undefined);
+    register().catch((error: unknown) => {
+      if (__DEV__) console.error('Push registration failed:', error);
     });
+
+    receivedSub = Notifications.addNotificationReceivedListener((notification: any) => {
+      if (__DEV__) {
+        console.log('Foreground notification received:', {
+          title: notification?.request?.content?.title,
+          body: notification?.request?.content?.body,
+          data: notification?.request?.content?.data,
+        });
+      }
+    });
+    responseSub = Notifications.addNotificationResponseReceivedListener((response: any) => {
+      const data = response?.notification?.request?.content?.data || {};
+      if (__DEV__) console.log('Notification tapped:', data);
+      handleNotificationRedirect(data).catch((error) => {
+        if (__DEV__) console.error('Notification tap redirect failed:', error);
+      });
+    });
+
+    Notifications.getLastNotificationResponseAsync()
+      .then((response: any) => {
+        const data = response?.notification?.request?.content?.data;
+        if (__DEV__) console.log('Cold-start notification response:', data || null);
+        if (data) {
+          return handleNotificationRedirect(data);
+        }
+      })
+      .catch((error: unknown) => {
+        if (__DEV__) console.error('Cold-start notification handling failed:', error);
+      });
 
     return () => {
       cancelled = true;

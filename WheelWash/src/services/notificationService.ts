@@ -37,7 +37,19 @@ export async function registerForPushNotifications(
 
   try {
     // Request permission
+    if (Platform.OS === 'android') {
+      await Notifications.setNotificationChannelAsync('default', {
+        name: 'Default',
+        importance: Notifications.AndroidImportance.MAX,
+        vibrationPattern: [0, 250, 250, 250],
+        enableVibrate: true,
+        lightColor: '#0877F2',
+        sound: 'default',
+      });
+    }
+
     const { status: existingStatus } = await Notifications.getPermissionsAsync();
+    if (__DEV__) console.log('Notification permission existing status:', existingStatus);
     let finalStatus = existingStatus;
 
     if (existingStatus !== 'granted') {
@@ -49,6 +61,7 @@ export async function registerForPushNotifications(
       if (__DEV__) console.log('Push notification permission not granted');
       return null;
     }
+    if (__DEV__) console.log('Notification permission final status:', finalStatus);
 
     // Get Expo push token
     const tokenData = await Notifications.getExpoPushTokenAsync({
@@ -66,21 +79,12 @@ export async function registerForPushNotifications(
         device_token: pushToken,
         expo_push_token: pushToken,
         platform: Platform.OS,
+        device_type: Platform.OS,
+        device_name: Device.deviceName || undefined,
       });
       if (__DEV__) console.log('Device token registered with backend');
     } catch (error) {
       if (__DEV__) console.error('Failed to register device token with backend:', error);
-    }
-
-    // Setup Android notification channel
-    if (Platform.OS === 'android') {
-      await Notifications.setNotificationChannelAsync('default', {
-        name: 'Default',
-        importance: Notifications.AndroidImportance.MAX,
-        vibrationPattern: [0, 250, 250, 250],
-        lightColor: '#0877F2',
-        sound: 'default',
-      });
     }
 
     return pushToken;
@@ -97,43 +101,70 @@ export async function registerForPushNotifications(
  * @param router - The expo-router router instance
  */
 export function setupNotificationTapListener(router: any): () => void {
+  const routeFromData = (data: Record<string, any>, source: string) => {
+    const screen = data?.screen;
+    const bookingId = data?.booking_id || data?.job_id;
+
+    if (__DEV__) console.log(`${source} notification response:`, { screen, bookingId, data });
+
+    if (!screen) return;
+
+    switch (screen) {
+      case 'booking_tracking':
+        if (bookingId) {
+          router.push(`/track?id=${bookingId}`);
+        }
+        break;
+
+      case 'booking_detail':
+        if (bookingId) {
+          router.push(`/booking-detail?id=${bookingId}`);
+        }
+        break;
+
+      case 'payment':
+        if (bookingId) {
+          router.push(`/payment?booking_id=${bookingId}`);
+        }
+        break;
+
+      default:
+        if (__DEV__) console.log('Unknown notification screen:', screen);
+        break;
+    }
+  };
+
+  const receivedSubscription = Notifications.addNotificationReceivedListener((notification) => {
+    if (__DEV__) {
+      console.log('Foreground notification received:', {
+        title: notification.request.content.title,
+        body: notification.request.content.body,
+        data: notification.request.content.data,
+      });
+    }
+  });
+
   const subscription = Notifications.addNotificationResponseReceivedListener(
     (response) => {
       const data = response.notification.request.content.data as Record<string, any>;
-      const screen = data?.screen;
-      const bookingId = data?.booking_id;
-
-      if (__DEV__) console.log('Notification tapped:', { screen, bookingId, data });
-
-      if (!screen) return;
-
-      switch (screen) {
-        case 'booking_tracking':
-          if (bookingId) {
-            router.push(`/track?id=${bookingId}`);
-          }
-          break;
-
-        case 'booking_detail':
-          if (bookingId) {
-            router.push(`/booking-detail?id=${bookingId}`);
-          }
-          break;
-
-        case 'payment':
-          if (bookingId) {
-            router.push(`/payment?booking_id=${bookingId}`);
-          }
-          break;
-
-        default:
-          if (__DEV__) console.log('Unknown notification screen:', screen);
-          break;
-      }
+      routeFromData(data, 'Tapped');
     }
   );
 
-  return () => subscription.remove();
+  Notifications.getLastNotificationResponseAsync()
+    .then((response) => {
+      const data = response?.notification.request.content.data as Record<string, any> | undefined;
+      if (__DEV__) console.log('Cold-start notification response:', data || null);
+      if (data) routeFromData(data, 'Cold-start');
+    })
+    .catch((error) => {
+      if (__DEV__) console.error('Failed to read cold-start notification response:', error);
+    });
+
+  return () => {
+    receivedSubscription.remove();
+    subscription.remove();
+  };
 }
 
 /**

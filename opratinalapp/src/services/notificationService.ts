@@ -36,14 +36,27 @@ export async function registerForPushNotifications(
   }
 
   try {
+    if (Platform.OS === 'android') {
+      await Notifications.setNotificationChannelAsync('default', {
+        name: 'Default',
+        importance: Notifications.AndroidImportance.MAX,
+        vibrationPattern: [0, 250, 250, 250],
+        enableVibrate: true,
+        lightColor: '#2196F3',
+        sound: 'default',
+      });
+    }
+
     // Request permission
     const { status: existingStatus } = await Notifications.getPermissionsAsync();
+    if (__DEV__) console.log('Notification permission existing status:', existingStatus);
     let finalStatus = existingStatus;
 
     if (existingStatus !== 'granted') {
       const { status } = await Notifications.requestPermissionsAsync();
       finalStatus = status;
     }
+    if (__DEV__) console.log('Notification permission final status:', finalStatus);
 
     if (finalStatus !== 'granted') {
       if (__DEV__) console.log('Push notification permission not granted');
@@ -64,22 +77,14 @@ export async function registerForPushNotifications(
         user_id: userId,
         role: role,
         device_token: pushToken,
+        expo_push_token: pushToken,
         platform: Platform.OS,
+        device_type: Platform.OS,
+        device_name: Device.deviceName || undefined,
       });
       if (__DEV__) console.log('Device token registered with backend', { userId, role });
     } catch (error) {
       if (__DEV__) console.error('Failed to register device token with backend:', error);
-    }
-
-    // Setup Android notification channel
-    if (Platform.OS === 'android') {
-      await Notifications.setNotificationChannelAsync('default', {
-        name: 'Default',
-        importance: Notifications.AndroidImportance.MAX,
-        vibrationPattern: [0, 250, 250, 250],
-        lightColor: '#2196F3',
-        sound: 'default',
-      });
     }
 
     return pushToken;
@@ -96,57 +101,79 @@ export async function registerForPushNotifications(
  * @param navigationRef - React Navigation ref
  */
 export function setupNotificationTapListener(navigationRef: any): () => void {
-  const subscription = Notifications.addNotificationResponseReceivedListener(
-    (response) => {
-      const data = response.notification.request.content.data as Record<string, any>;
-      const screen = data?.screen;
-      const bookingId = data?.booking_id;
+  const routeFromResponse = (response: Notifications.NotificationResponse | null, source: string) => {
+    if (!response) return;
 
-      if (__DEV__) console.log('Notification tapped:', { screen, bookingId, data });
+    const data = response.notification.request.content.data as Record<string, any>;
+    const screen = data?.screen;
+    const bookingId = data?.booking_id || data?.job_id;
 
-      if (!screen || !navigationRef?.current) return;
+    if (__DEV__) console.log(`${source} notification response:`, { screen, bookingId, data });
 
-      const navigation = navigationRef.current;
+    if (!screen || !navigationRef?.current) return;
 
-      switch (screen) {
-        case 'worker_job_detail':
-          navigation.navigate('Worker', {
-            screen: 'WorkerJobDetailScreen',
-            params: { bookingId },
-          });
-          break;
+    const navigation = navigationRef.current;
 
-        case 'driver_job_detail':
-          navigation.navigate('PickupDriver', {
-            screen: 'DriverJobDetailScreen',
-            params: { bookingId },
-          });
-          break;
+    switch (screen) {
+      case 'worker_job_detail':
+        navigation.navigate('Worker', {
+          screen: 'WorkerJobDetailScreen',
+          params: { bookingId },
+        });
+        break;
 
-        case 'partner_booking_detail':
-          navigation.navigate('Partner', {
-            screen: 'PartnerJobDetailScreen',
-            params: { bookingId },
-          });
-          break;
+      case 'driver_job_detail':
+        navigation.navigate('PickupDriver', {
+          screen: 'DriverJobDetailScreen',
+          params: { bookingId },
+        });
+        break;
 
-        case 'booking_tracking':
-        case 'booking_detail':
-          // Admin can view booking detail
-          navigation.navigate('Admin', {
-            screen: 'AdminBookingDetailScreen',
-            params: { bookingId },
-          });
-          break;
+      case 'partner_booking_detail':
+        navigation.navigate('Partner', {
+          screen: 'PartnerJobDetailScreen',
+          params: { bookingId },
+        });
+        break;
 
-        default:
-          if (__DEV__) console.log('Unknown notification screen:', screen);
-          break;
-      }
+      case 'booking_tracking':
+      case 'booking_detail':
+        navigation.navigate('Admin', {
+          screen: 'AdminBookingDetailScreen',
+          params: { bookingId },
+        });
+        break;
+
+      default:
+        if (__DEV__) console.log('Unknown notification screen:', screen);
+        break;
     }
-  );
+  };
 
-  return () => subscription.remove();
+  const receivedSubscription = Notifications.addNotificationReceivedListener((notification) => {
+    if (__DEV__) {
+      console.log('Foreground notification received:', {
+        title: notification.request.content.title,
+        body: notification.request.content.body,
+        data: notification.request.content.data,
+      });
+    }
+  });
+
+  const responseSubscription = Notifications.addNotificationResponseReceivedListener((response) => {
+    routeFromResponse(response, 'Tapped');
+  });
+
+  Notifications.getLastNotificationResponseAsync()
+    .then((response) => routeFromResponse(response, 'Cold-start'))
+    .catch((error) => {
+      if (__DEV__) console.error('Failed to read cold-start notification response:', error);
+    });
+
+  return () => {
+    receivedSubscription.remove();
+    responseSubscription.remove();
+  };
 }
 
 /**

@@ -8,14 +8,18 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 export const LoginScreen = ({ navigation }: any) => {
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
-  const [loading, setLoading] = useState(false);
+  const [otpLoading, setOtpLoading] = useState(false);
+  const [passwordLoading, setPasswordLoading] = useState(false);
+
+  const busy = otpLoading || passwordLoading;
 
   const handleLogin = async () => {
+    if (busy) return;
     if (!phone) {
       Alert.alert('Error', 'Please enter your phone number');
       return;
     }
-    setLoading(true);
+    setOtpLoading(true);
     try {
       const response = await sendOtp(phone);
       navigation.navigate('OtpScreen', { 
@@ -28,17 +32,18 @@ export const LoginScreen = ({ navigation }: any) => {
       // If backend is not perfect yet, allow bypass for testing purposes
       navigation.navigate('OtpScreen', { phone });
     } finally {
-      setLoading(false);
+      setOtpLoading(false);
     }
   };
 
   const handlePasswordLogin = async () => {
+    if (busy) return;
     if (!phone || !password) {
       Alert.alert('Error', 'Please enter your phone number and password');
       return;
     }
 
-    setLoading(true);
+    setPasswordLoading(true);
     try {
       const response = await loginWithPassword(phone, password);
       const data = response.data;
@@ -55,7 +60,7 @@ export const LoginScreen = ({ navigation }: any) => {
     } catch (e: any) {
       Alert.alert('Error', e.response?.data?.message || 'Invalid credentials');
     } finally {
-      setLoading(false);
+      setPasswordLoading(false);
     }
   };
 
@@ -80,8 +85,18 @@ export const LoginScreen = ({ navigation }: any) => {
         onChangeText={setPassword}
       />
       
-      <AppButton title="Login with Password" onPress={handlePasswordLogin} loading={loading} />
-      <AppButton title="Send OTP" onPress={handleLogin} loading={loading} />
+      <AppButton
+        title="Login with Password"
+        onPress={handlePasswordLogin}
+        loading={passwordLoading}
+        disabled={otpLoading}
+      />
+      <AppButton
+        title="Send OTP"
+        onPress={handleLogin}
+        loading={otpLoading}
+        disabled={passwordLoading}
+      />
     </View>
   );
 };

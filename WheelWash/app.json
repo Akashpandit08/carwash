@@ -9,7 +9,14 @@
     "plugins": [
       "expo-router",
       "expo-font",
-      "expo-notifications",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/icon.png",
+          "color": "#0877F2",
+          "defaultChannel": "default"
+        }
+      ],
       "expo-web-browser"
     ],
     "ios": {
@@ -30,7 +37,8 @@
       },
       "permissions": [
         "ACCESS_COARSE_LOCATION",
-        "ACCESS_FINE_LOCATION"
+        "ACCESS_FINE_LOCATION",
+        "POST_NOTIFICATIONS"
       ],
       "config": {
         "googleMaps": {

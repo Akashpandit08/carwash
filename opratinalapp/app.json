@@ -7,7 +7,14 @@
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "plugins": [
-      "expo-notifications"
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/android-icon-foreground.png",
+          "color": "#2196F3",
+          "defaultChannel": "default"
+        }
+      ]
     ],
     "ios": {
       "supportsTablet": true,
@@ -23,6 +30,9 @@
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
       "package": "com.akashpandit08.WashMateOperations",
+      "permissions": [
+        "POST_NOTIFICATIONS"
+      ],
       "config": {
         "googleMaps": {
           "apiKey": "$GOOGLE_MAPS_ANDROID_API_KEY"

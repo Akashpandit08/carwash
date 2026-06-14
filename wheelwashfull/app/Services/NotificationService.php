@@ -48,6 +48,8 @@ class NotificationService
             $data = array_merge([
                 'event_type' => $type,
                 'booking_id' => $bookingId,
+                'role' => $role,
+                'channelId' => 'default',
             ], $data);
 
             if ($this->recentDuplicateExists($userId, $type, $bookingId, $data['status'] ?? null)) {
@@ -105,6 +107,19 @@ class NotificationService
             $devices = UserDevice::where('user_id', $userId)
                 ->where('is_active', true)
                 ->get();
+            $tokens = $devices
+                ->map(fn (UserDevice $device) => $device->expo_push_token ?? $device->device_token)
+                ->filter()
+                ->values();
+
+            Log::info('Notification devices selected', [
+                'user_id' => $userId,
+                'role' => $role,
+                'notification_id' => $notification->id,
+                'device_count' => $devices->count(),
+                'expo_token_count' => $tokens->count(),
+                'device_ids' => $devices->pluck('id')->values()->all(),
+            ]);
 
             foreach ($devices as $device) {
                 $token = $device->expo_push_token ?? $device->device_token;
@@ -113,7 +128,7 @@ class NotificationService
                         'type' => $type,
                         'sound' => $soundFilePath,
                         'notification_id' => $notification->id,
-                    ]));
+                    ]), $device);
                 }
             }
         } catch (Throwable $e) {
@@ -949,7 +964,7 @@ class NotificationService
         }
     }
 
-    public function sendExpoPush(string $token, AppNotification|string $notificationOrTitle, ?string $body = null, array $data = []): void
+    public function sendExpoPush(string $token, AppNotification|string $notificationOrTitle, ?string $body = null, array $data = [], ?UserDevice $device = null): void
     {
         if ($notificationOrTitle instanceof AppNotification) {
             $title = $notificationOrTitle->title;
@@ -969,22 +984,37 @@ class NotificationService
             'title' => $title,
             'body' => $body,
             'sound' => 'default',
+            'channelId' => $data['channelId'] ?? 'default',
+            'priority' => 'high',
             'data' => $data,
         ]);
+        $responseData = $response->json();
 
         if (! $response->successful()) {
             Log::warning('Expo push failed', [
                 'token' => substr($token, 0, 20) . '...',
+                'device_id' => $device?->id,
                 'status' => $response->status(),
                 'body' => $response->body(),
             ]);
             throw new \RuntimeException('Expo push failed: '.$response->body());
         }
 
+        $error = $responseData['data']['details']['error'] ?? $responseData['errors'][0]['code'] ?? null;
+        if ($error === 'DeviceNotRegistered' && $device) {
+            $device->update(['is_active' => false]);
+            Log::warning('Expo token marked inactive', [
+                'device_id' => $device->id,
+                'user_id' => $device->user_id,
+                'error' => $error,
+            ]);
+        }
+
         Log::info('Expo push sent', [
             'token' => substr($token, 0, 20) . '...',
+            'device_id' => $device?->id,
             'status' => $response->status(),
-            'body' => $response->body(),
+            'body' => $responseData ?: $response->body(),
         ]);
     }
 

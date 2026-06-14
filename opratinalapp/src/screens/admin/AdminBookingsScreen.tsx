@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { SafeScreen } from '../../components/SafeScreen';
 import { View, StyleSheet, FlatList, RefreshControl } from 'react-native';
 import { getBookings } from '../../api/adminApi';
 import { BookingCard } from '../../components/BookingCard';
@@ -35,7 +36,7 @@ export const AdminBookingsScreen = ({ navigation }: any) => {
   if (loading) return <LoadingView message="Loading Bookings..." />;
 
   return (
-    <View style={styles.container}>
+    <SafeScreen style={styles.container}>
       <FlatList
         data={bookings}
         keyExtractor={(item) => item.id?.toString()}
@@ -49,7 +50,7 @@ export const AdminBookingsScreen = ({ navigation }: any) => {
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
         contentContainerStyle={bookings.length === 0 ? { flex: 1 } : { paddingBottom: 20 }}
       />
-    </View>
+    </SafeScreen>
   );
 };
 

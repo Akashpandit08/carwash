@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { SafeScreen } from '../../components/SafeScreen';
 import { View, Text, StyleSheet, FlatList, RefreshControl, TextInput, TouchableOpacity } from 'react-native';
 import { getPartners, togglePartnerStatus } from '../../api/adminApi';
 import { LoadingView } from '../../components/LoadingView';
@@ -91,7 +92,7 @@ export const AdminPartnersScreen = ({ navigation }: any) => {
   );
 
   return (
-    <View style={styles.container}>
+    <SafeScreen style={styles.container}>
       <View style={styles.searchRow}>
         <View style={styles.searchBar}>
           <Ionicons name="search" size={20} color="#888" />
@@ -114,7 +115,7 @@ export const AdminPartnersScreen = ({ navigation }: any) => {
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
         contentContainerStyle={filteredData.length === 0 ? { flex: 1 } : { paddingBottom: 20 }}
       />
-    </View>
+    </SafeScreen>
   );
 };
 

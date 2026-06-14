@@ -15,21 +15,28 @@
 
         <form method="GET" class="p-3">
             <div class="row g-2">
-                <div class="col-md-4">
+                <div class="col-md-3">
+                    <input type="date" name="date" class="form-control form-control-sm" 
+                           value="{{ request()->has('date') ? request('date') : now()->format('Y-m-d') }}">
+                </div>
+                <div class="col-md-3">
                     <input type="text" name="search" class="form-control form-control-sm" 
                            placeholder="Search by time..." value="{{ request('search') }}">
                 </div>
-                <div class="col-md-4">
+                <div class="col-md-3">
                     <select name="status" class="form-select form-select-sm">
                         <option value="">All Status</option>
                         <option value="active" {{ request('status') == 'active' ? 'selected' : '' }}>Active</option>
                         <option value="inactive" {{ request('status') == 'inactive' ? 'selected' : '' }}>Inactive</option>
                     </select>
                 </div>
-                <div class="col-md-4">
+                <div class="col-md-3">
                     <button type="submit" class="btn btn-sm btn-primary">
                         <i class="bi bi-search"></i> Filter
                     </button>
+                    <a href="{{ route('admin.slots.index', ['date' => '']) }}" class="btn btn-sm btn-secondary">
+                        <i class="bi bi-x-circle"></i> Show All
+                    </a>
                 </div>
             </div>
         </form>

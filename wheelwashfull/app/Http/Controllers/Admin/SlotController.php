@@ -21,8 +21,10 @@ class SlotController extends Controller
 
         // Search
         if ($request->search) {
-            $query->where('start_time', 'like', '%' . $request->search . '%')
+            $query->where(function ($q) use ($request) {
+                $q->where('start_time', 'like', '%' . $request->search . '%')
                   ->orWhere('end_time', 'like', '%' . $request->search . '%');
+            });
         }
 
         // Filter by status
@@ -31,11 +33,15 @@ class SlotController extends Controller
         }
 
         // Filter by date
-        if ($request->date) {
-            $query->where('date', $request->date);
+        if ($request->has('date')) {
+            if ($request->date) {
+                $query->whereDate('date', $request->date);
+            }
+        } else {
+            $query->whereDate('date', now()->format('Y-m-d'));
         }
 
-        $slots = $query->orderBy('date')->orderBy('start_time')->paginate(20);
+        $slots = $query->orderBy('date')->orderBy('start_time')->paginate(20)->withQueryString();
 
         return view('admin.slots.index', compact('slots'));
     }

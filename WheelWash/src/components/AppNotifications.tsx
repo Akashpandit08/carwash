@@ -33,7 +33,8 @@ export function AppNotifications() {
     let cancelled = false;
 
     const register = async () => {
-      if (!Device.isDevice) return;
+      if (!Device.isDevice || Platform.OS === 'web') return;
+
 
       if (Platform.OS === 'android') {
         await Notifications.setNotificationChannelAsync('default', {
@@ -92,17 +93,19 @@ export function AppNotifications() {
       });
     });
 
-    Notifications.getLastNotificationResponseAsync()
-      .then((response: any) => {
-        const data = response?.notification?.request?.content?.data;
-        if (__DEV__) console.log('Cold-start notification response:', data || null);
-        if (data) {
-          return handleNotificationRedirect(data);
-        }
-      })
-      .catch((error: unknown) => {
-        if (__DEV__) console.error('Cold-start notification handling failed:', error);
-      });
+    if (Platform.OS !== 'web') {
+      Notifications.getLastNotificationResponseAsync()
+        .then((response: any) => {
+          const data = response?.notification?.request?.content?.data;
+          if (__DEV__) console.log('Cold-start notification response:', data || null);
+          if (data) {
+            return handleNotificationRedirect(data);
+          }
+        })
+        .catch((error: unknown) => {
+          if (__DEV__) console.error('Cold-start notification handling failed:', error);
+        });
+    }
 
     return () => {
       cancelled = true;

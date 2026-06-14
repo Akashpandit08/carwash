@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { SafeScreen } from '../../components/SafeScreen';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert } from 'react-native';
 import { getPickupDriverDetail, togglePickupDriverStatus } from '../../api/adminApi';
 import { LoadingView } from '../../components/LoadingView';
@@ -37,7 +38,7 @@ export const AdminPickupDriverDetailScreen = ({ route, navigation }: any) => {
   if (!data) return <EmptyState title="Driver Not Found" />;
 
   return (
-    <ScrollView style={styles.container}>
+    <SafeScreen scrollable style={styles.container}>
       {/* Profile Section */}
       <View style={styles.section}>
         <View style={styles.headerRow}>
@@ -119,7 +120,7 @@ export const AdminPickupDriverDetailScreen = ({ route, navigation }: any) => {
           </Text>
         </TouchableOpacity>
       </View>
-    </ScrollView>
+    </SafeScreen>
   );
 };
 

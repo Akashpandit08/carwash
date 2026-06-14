@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { SafeScreen } from '../../components/SafeScreen';
 import { View, Text, StyleSheet, TextInput, ScrollView, TouchableOpacity, Alert } from 'react-native';
 import { createWorker, getWorkerDetail, updateWorker } from '../../api/adminApi';
 import { LoadingView } from '../../components/LoadingView';
@@ -86,7 +87,8 @@ export const AdminWorkerFormScreen = ({ route, navigation }: any) => {
   if (loading) return <LoadingView message="Loading..." />;
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+    <View style={styles.container}>
+      <SafeScreen scrollable style={styles.content}>
       <Text style={styles.title}>{isEdit ? 'Edit Worker' : 'Add Worker'}</Text>
 
       <Text style={styles.label}>Name *</Text>
@@ -137,7 +139,8 @@ export const AdminWorkerFormScreen = ({ route, navigation }: any) => {
       <TouchableOpacity style={styles.saveBtn} onPress={handleSave} disabled={saving}>
         <Text style={styles.saveBtnText}>{saving ? 'Saving...' : 'Save Worker'}</Text>
       </TouchableOpacity>
-    </ScrollView>
+      </SafeScreen>
+    </View>
   );
 };
 

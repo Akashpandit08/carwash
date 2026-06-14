@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { SafeScreen } from '../../components/SafeScreen';
 import { View, Text, StyleSheet, TextInput, ScrollView, TouchableOpacity, Alert } from 'react-native';
 import { createPartner, getPartnerDetail, updatePartner } from '../../api/adminApi';
 import { LoadingView } from '../../components/LoadingView';
@@ -92,8 +93,9 @@ export const AdminPartnerFormScreen = ({ route, navigation }: any) => {
   if (loading) return <LoadingView message="Loading..." />;
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      <Text style={styles.title}>{isEdit ? 'Edit Partner' : 'Add Partner'}</Text>
+    <View style={styles.container}>
+      <SafeScreen scrollable style={styles.content}>
+        <Text style={styles.title}>{isEdit ? 'Edit Partner' : 'Add Partner'}</Text>
 
       <Text style={styles.label}>Business Name *</Text>
       <TextInput style={styles.input} value={formData.business_name} onChangeText={(t) => setFormData({ ...formData, business_name: t })} placeholder="Enter business name" />
@@ -146,7 +148,8 @@ export const AdminPartnerFormScreen = ({ route, navigation }: any) => {
       <TouchableOpacity style={styles.saveBtn} onPress={handleSave} disabled={saving}>
         <Text style={styles.saveBtnText}>{saving ? 'Saving...' : 'Save Partner'}</Text>
       </TouchableOpacity>
-    </ScrollView>
+      </SafeScreen>
+    </View>
   );
 };
 

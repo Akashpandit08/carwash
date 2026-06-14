@@ -25,9 +25,15 @@ class AssignmentService
             throw new InvalidArgumentException('Only doorstep bookings can be assigned to a worker.');
         }
 
-        $admin = User::findOrFail($adminId);
+        $admin = User::find($adminId);
+        if (!$admin) {
+            throw new InvalidArgumentException('Admin not found.');
+        }
         $this->cityScope->ensureCanAccessModel($admin, $booking);
-        $worker = User::where('role', UserRole::WORKER)->findOrFail($workerId);
+        $worker = User::where('role', UserRole::WORKER)->find($workerId);
+        if (!$worker) {
+            throw new InvalidArgumentException('Selected worker not found or inactive.');
+        }
         $this->ensureSameCity($booking, $worker, 'worker');
 
         return DB::transaction(function () use ($booking, $worker, $adminId) {
@@ -47,9 +53,15 @@ class AssignmentService
 
     public function assignPartner(Booking $booking, int $partnerId, int $adminId): Booking
     {
-        $admin = User::findOrFail($adminId);
+        $admin = User::find($adminId);
+        if (!$admin) {
+            throw new InvalidArgumentException('Admin not found.');
+        }
         $this->cityScope->ensureCanAccessModel($admin, $booking);
-        $partner = User::where('role', UserRole::PARTNER)->findOrFail($partnerId);
+        $partner = User::where('role', UserRole::PARTNER)->find($partnerId);
+        if (!$partner) {
+            throw new InvalidArgumentException('Selected partner not found or inactive.');
+        }
         $this->ensureSameCity($booking, $partner, 'partner');
 
         return DB::transaction(function () use ($booking, $partner, $adminId) {
@@ -78,9 +90,15 @@ class AssignmentService
             throw new InvalidArgumentException('Only pickup_drop bookings can be assigned to a pickup driver.');
         }
 
-        $admin = User::findOrFail($adminId);
+        $admin = User::find($adminId);
+        if (!$admin) {
+            throw new InvalidArgumentException('Admin not found.');
+        }
         $this->cityScope->ensureCanAccessModel($admin, $booking);
-        $driver = User::where('role', UserRole::PICKUP_DRIVER)->findOrFail($driverId);
+        $driver = User::where('role', UserRole::PICKUP_DRIVER)->find($driverId);
+        if (!$driver) {
+            throw new InvalidArgumentException('Selected pickup driver not found or inactive.');
+        }
         $this->ensureSameCity($booking, $driver, 'pickup driver');
 
         return DB::transaction(function () use ($booking, $driver, $adminId) {

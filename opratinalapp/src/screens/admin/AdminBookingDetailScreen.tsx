@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { SafeScreen } from '../../components/SafeScreen';
 import { View, Text, StyleSheet, ScrollView, Alert } from 'react-native';
 import { getBookingDetail } from '../../api/adminApi';
 import { LoadingView } from '../../components/LoadingView';
@@ -33,7 +34,7 @@ export const AdminBookingDetailScreen = ({ route, navigation }: any) => {
   if (!booking) return <EmptyState title="Booking Not Found" />;
 
   return (
-    <ScrollView style={styles.container}>
+    <SafeScreen scrollable style={styles.container}>
       <View style={styles.card}>
         <View style={styles.row}>
           <Text style={styles.title}>#{booking.booking_no || booking.id}</Text>
@@ -69,7 +70,7 @@ export const AdminBookingDetailScreen = ({ route, navigation }: any) => {
           style={{ marginTop: 16 }}
         />
       </View>
-    </ScrollView>
+    </SafeScreen>
   );
 };
 

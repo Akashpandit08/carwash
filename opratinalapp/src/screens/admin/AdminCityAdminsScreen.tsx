@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { SafeScreen } from '../../components/SafeScreen';
 import { View, Text, StyleSheet } from 'react-native';
 import { getCityAdmins, createCityAdmin, updateCityAdmin, deleteCityAdmin, getCities } from '../../api/adminApi';
 import { GenericCrudScreen, CrudField } from '../../components/GenericCrudScreen';

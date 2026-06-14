@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { SafeScreen } from '../../components/SafeScreen';
 import { View, Text, StyleSheet, FlatList, RefreshControl, TouchableOpacity, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { getPayouts, approvePayout, markPayoutPaid } from '../../api/adminApi';
@@ -50,7 +51,7 @@ export const AdminPayoutsScreen = () => {
   if (loading) return <LoadingView message="Loading Payouts..." />;
 
   return (
-    <View style={styles.container}>
+    <SafeScreen style={styles.container}>
       <FlatList
         data={data}
         keyExtractor={(item) => item.id?.toString()}
@@ -87,7 +88,7 @@ export const AdminPayoutsScreen = () => {
         ListEmptyComponent={<EmptyState title="No Payout Requests Found" />}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
       />
-    </View>
+    </SafeScreen>
   );
 };
 

@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { SafeScreen } from '../../components/SafeScreen';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert } from 'react-native';
 import { getWorkerDetail, toggleWorkerStatus } from '../../api/adminApi';
 import { LoadingView } from '../../components/LoadingView';
@@ -37,7 +38,7 @@ export const AdminWorkerDetailScreen = ({ route, navigation }: any) => {
   if (!data) return <EmptyState title="Worker Not Found" />;
 
   return (
-    <ScrollView style={styles.container}>
+    <SafeScreen scrollable style={styles.container}>
       {/* Profile Section */}
       <View style={styles.section}>
         <View style={styles.headerRow}>
@@ -106,7 +107,7 @@ export const AdminWorkerDetailScreen = ({ route, navigation }: any) => {
           </Text>
         </TouchableOpacity>
       </View>
-    </ScrollView>
+    </SafeScreen>
   );
 };
 

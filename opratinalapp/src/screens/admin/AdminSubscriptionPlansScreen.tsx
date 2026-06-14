@@ -1,4 +1,5 @@
 import React from 'react';
+import { SafeScreen } from '../../components/SafeScreen';
 import { View, Text, StyleSheet } from 'react-native';
 import { getSubscriptionPlans, createSubscriptionPlan, updateSubscriptionPlan, deleteSubscriptionPlan } from '../../api/adminApi';
 import { GenericCrudScreen, CrudField } from '../../components/GenericCrudScreen';

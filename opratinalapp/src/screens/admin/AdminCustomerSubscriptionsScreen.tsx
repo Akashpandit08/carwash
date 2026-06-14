@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { SafeScreen } from '../../components/SafeScreen';
 import { View, Text, StyleSheet, FlatList, RefreshControl, TouchableOpacity, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { getCustomerSubscriptions, activateCustomerSubscription, cancelCustomerSubscription, markCustomerSubscriptionPaid } from '../../api/adminApi';
@@ -50,7 +51,7 @@ export const AdminCustomerSubscriptionsScreen = () => {
   if (loading) return <LoadingView message="Loading Subscriptions..." />;
 
   return (
-    <View style={styles.container}>
+    <SafeScreen style={styles.container}>
       <FlatList
         data={data}
         keyExtractor={(item) => item.id?.toString()}
@@ -91,7 +92,7 @@ export const AdminCustomerSubscriptionsScreen = () => {
         ListEmptyComponent={<EmptyState title="No Subscriptions Found" />}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
       />
-    </View>
+    </SafeScreen>
   );
 };
 

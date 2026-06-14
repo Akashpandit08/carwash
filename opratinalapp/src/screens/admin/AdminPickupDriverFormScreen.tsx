@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { SafeScreen } from '../../components/SafeScreen';
 import { View, Text, StyleSheet, TextInput, ScrollView, TouchableOpacity, Alert } from 'react-native';
 import { createPickupDriver, getPickupDriverDetail, updatePickupDriver } from '../../api/adminApi';
 import { LoadingView } from '../../components/LoadingView';
@@ -87,7 +88,8 @@ export const AdminPickupDriverFormScreen = ({ route, navigation }: any) => {
   if (loading) return <LoadingView message="Loading..." />;
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+    <View style={styles.container}>
+      <SafeScreen scrollable style={styles.content}>
       <Text style={styles.title}>{isEdit ? 'Edit Pickup Driver' : 'Add Pickup Driver'}</Text>
 
       <Text style={styles.label}>Name *</Text>
@@ -141,7 +143,8 @@ export const AdminPickupDriverFormScreen = ({ route, navigation }: any) => {
       <TouchableOpacity style={styles.saveBtn} onPress={handleSave} disabled={saving}>
         <Text style={styles.saveBtnText}>{saving ? 'Saving...' : 'Save Pickup Driver'}</Text>
       </TouchableOpacity>
-    </ScrollView>
+      </SafeScreen>
+    </View>
   );
 };
 

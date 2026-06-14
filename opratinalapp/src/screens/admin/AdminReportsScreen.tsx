@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { SafeScreen } from '../../components/SafeScreen';
 import { View, Text, StyleSheet, ScrollView, RefreshControl } from 'react-native';
 import { getReports } from '../../api/adminApi';
 import { LoadingView } from '../../components/LoadingView';

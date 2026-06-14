@@ -12,7 +12,7 @@
       [
         "expo-notifications",
         {
-          "icon": "./assets/icon.png",
+          "icon": "./assets/notification-icon.png",
           "color": "#0877F2",
           "defaultChannel": "default"
         }
@@ -33,6 +33,7 @@
       "package": "com.wheelwash.app",
       "googleServicesFile": "./google-services.json",
       "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#0877F2"
       },
       "permissions": [

@@ -28,7 +28,11 @@ apiClient.interceptors.request.use(
 );
 
 apiClient.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    // Normalize { data: { data: [] } } to a simpler format if needed, or just let components read it.
+    // For now, return the response normally to avoid breaking existing code.
+    return response;
+  },
   (error) => {
     const config = error.config;
     const url = config?.url;
@@ -36,7 +40,18 @@ apiClient.interceptors.response.use(
     const requestBody = config?.data;
     const status = error.response?.status;
     const responseData = error.response?.data;
-    const message = responseData?.message || error.message;
+    
+    // Attempt to extract friendly message from Laravel exceptions
+    let message = responseData?.message || error.message;
+    if (message.includes('No query results for model')) {
+       message = 'The requested resource could not be found.';
+    } else if (responseData?.errors) {
+       // Get the first validation error if it exists
+       const firstErrorKey = Object.keys(responseData.errors)[0];
+       if (firstErrorKey) {
+          message = responseData.errors[firstErrorKey][0] || message;
+       }
+    }
 
     if (__DEV__) {
       console.error(`[API ERROR] ${method} ${url}`);
@@ -47,6 +62,11 @@ apiClient.interceptors.response.use(
 
     if (status === 401) {
       Alert.alert('Session expired', 'Please log in again.');
+    }
+
+    // Rewrite the error object to have a clean normalized message
+    if (error.response && error.response.data) {
+        error.response.data.message = message;
     }
 
     return Promise.reject(error);

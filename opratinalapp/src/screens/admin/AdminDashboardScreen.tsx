@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { SafeScreen } from '../../components/SafeScreen';
 import { View, Text, StyleSheet, ScrollView, RefreshControl } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getDashboard } from '../../api/adminApi';
@@ -43,17 +44,16 @@ export const AdminDashboardScreen = ({ navigation }: any) => {
 
   if (!data || Object.keys(data).length === 0) {
     return (
-      <ScrollView refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}>
+      <SafeScreen scrollable style={styles.container}>
+        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
         <EmptyState title="No Data" message="Unable to load dashboard data." />
-      </ScrollView>
+      </SafeScreen>
     );
   }
 
   return (
-    <ScrollView 
-      style={styles.container}
-      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
-    >
+    <SafeScreen scrollable style={styles.container}>
+      <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
       <Text style={styles.title}>Overview</Text>
       {!!user?.service_city_name && !isSuperAdmin && (
         <Text style={styles.cityLabel}>{user.service_city_name}</Text>
@@ -82,24 +82,7 @@ export const AdminDashboardScreen = ({ navigation }: any) => {
           ))}
         </>
       )}
-      <Text style={styles.sectionTitle}>Management</Text>
-      {isSuperAdmin && (
-        <>
-          <AppButton title="Locations" onPress={() => navigation.navigate('AdminLocationsScreen')} type="secondary" />
-          <AppButton title="City Admins" onPress={() => navigation.navigate('AdminCityAdminsScreen')} type="secondary" />
-        </>
-      )}
-      <AppButton title="View Bookings" onPress={() => navigation.navigate('AdminBookingsScreen')} />
-      <AppButton title="Manage Partners" onPress={() => navigation.navigate('AdminPartnersScreen')} type="secondary" />
-      <AppButton title="Manage Workers" onPress={() => navigation.navigate('AdminWorkersScreen')} type="secondary" />
-      <AppButton title="Manage Pickup Drivers" onPress={() => navigation.navigate('AdminPickupDriversScreen')} type="secondary" />
-      <AppButton title="Manage Services" onPress={() => navigation.navigate('AdminServicesScreen')} type="secondary" />
-      <AppButton title="Subscription Plans" onPress={() => navigation.navigate('AdminSubscriptionPlansScreen')} type="secondary" />
-      <AppButton title="Customer Subscriptions" onPress={() => navigation.navigate('AdminCustomerSubscriptionsScreen')} type="secondary" />
-      <AppButton title="Manage Slots" onPress={() => navigation.navigate('AdminSlotsScreen')} type="secondary" />
-      <AppButton title="Manage Coupons" onPress={() => navigation.navigate('AdminCouponsScreen')} type="secondary" />
-      <AppButton title="View Reports" onPress={() => navigation.navigate('AdminReportsScreen')} type="secondary" />
-    </ScrollView>
+    </SafeScreen>
   );
 };
 
